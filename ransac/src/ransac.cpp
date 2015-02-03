@@ -1,3 +1,98 @@
+#include <pcl/io/openni_grabber.h>
+#include <pcl/visualization/cloud_viewer.h>
+#include <iostream>
+#include <pcl/console/parse.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <pcl/sample_consensus/ransac.h>
+#include <pcl/sample_consensus/sac_model_plane.h>
+#include <pcl/sample_consensus/sac_model_sphere.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <boost/thread/thread.hpp>
+#include <pcl/console/parse.h>
+
+
+
+class SimpleOpenNIViewer
+{
+
+
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud;// = new pcl::PointCloud<pcl::PointXYZRGB>;
+	// pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+public:
+	SimpleOpenNIViewer () : viewer ("PCL OpenNI Viewer") {}
+
+	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud){
+
+		bool shouldRansac = true;
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
+
+		if(shouldRansac){
+
+			std::vector<int> inliers;
+
+			// created RandomSampleConsensus object and compute the appropriated model
+			pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA>::Ptr model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA> (cloud));
+
+
+			//Apply
+			pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
+			ransac.setDistanceThreshold (.1);
+			ransac.computeModel();
+			ransac.getInliers(inliers);
+
+			// copies all inliers of the model computed to another PointCloud
+			pcl::copyPointCloud<pcl::PointXYZRGBA>(*cloud, inliers, *finalcloud);
+
+		}
+
+		cout << "S";
+
+		if (!viewer.wasStopped()){
+			if(shouldRansac){
+				viewer.showCloud (finalcloud);
+			}
+			else{
+				viewer.showCloud (cloud);
+			}
+		}
+
+	}
+
+	void run (){
+		pcl::Grabber* interface = new pcl::OpenNIGrabber();
+		boost::function<void (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind (&SimpleOpenNIViewer::cloud_cb_, this, _1);
+
+		interface->registerCallback (f);
+		interface->start ();
+
+		while (!viewer.wasStopped()){
+			boost::this_thread::sleep (boost::posix_time::seconds (1));
+		}
+
+		interface->stop ();
+}
+
+pcl::visualization::CloudViewer viewer;
+};
+
+int main ()
+{
+	SimpleOpenNIViewer v;
+	v.run ();
+	return 0;
+}
+
+
+
+
+
+/*
+
+//RANSAC
+
 #include <iostream>
 #include <pcl/console/parse.h>
 #include <pcl/filters/extract_indices.h>
@@ -15,7 +110,7 @@
 
 using namespace std;
 using namespace pcl;
- 
+
 //PointCloud<PointXYZRGB>::Ptr cloud(new PointCloud<PointXYZRGB>); // A cloud that will store color info.
 PointCloud<PointXYZRGB>::Ptr cloud(new PointCloud<PointXYZRGB>);    // A fallback cloud with just depth data.
 PointCloud<PointXYZRGB>::Ptr final(new PointCloud<PointXYZRGB>);    // A fallback cloud with just depth data.
@@ -31,7 +126,7 @@ void grabberCallback(const PointCloud<PointXYZRGB>::ConstPtr& cloud)
 		cout << "grabberCallback" << " "<< cloud->points.size() <<"\n";
 		::grabberRecieved = true;
 	}
-	
+
 	// copies all inliers of the model computed to another PointCloud
 	copyPointCloud<PointXYZRGB>(*cloud, *::cloud);
 
@@ -76,26 +171,25 @@ boost::shared_ptr<visualization::PCLVisualizer> rgbVis (PointCloud<PointXYZRGB>:
 int main(int argc, char** argv)
 {
 	bool justVisualize(false);
- 
-	
-	// Second mode, start fetching and displaying frames from the device.	
+
+	// Start fetching and displaying frames from the device.
 	openniGrabber = new OpenNIGrabber();
 	if (openniGrabber == 0)
 		return -1;
 	boost::function<void (const PointCloud<PointXYZRGB>::ConstPtr&)> f = boost::bind(&grabberCallback, _1);
 	openniGrabber->registerCallback(f);
-	
- 
+
+
  	//Start grabber
 	openniGrabber->start();
- 
+
  	//Wait to recieve grabbber callback at least once
  	while(! ::grabberRecieved){
  		boost::this_thread::sleep(boost::posix_time::seconds(1));
  	}
- 	
+
  	cout << "Cloud: "<< cloud->points.size() <<"\n";
- 	
+
  	vector<int> inliers;
  	// created RandomSampleConsensus object and compute the appropriated model
 	SampleConsensusModelSphere<PointXYZRGB>::Ptr model_s(new SampleConsensusModelSphere<PointXYZRGB> (cloud));
@@ -114,10 +208,10 @@ int main(int argc, char** argv)
 		ransac.computeModel();
 		ransac.getInliers(inliers);
 	}
-	
+
 	// copies all inliers of the model computed to another PointCloud
-	copyPointCloud<PointXYZRGB>(*cloud, inliers, *final);  
-  	
+	copyPointCloud<PointXYZRGB>(*cloud, inliers, *final);
+
 	// creates the visualization object and adds either our orignial cloud or all of the inliers
 	// depending on the command line arguments specified.
 	boost::shared_ptr<visualization::PCLVisualizer> viewer;
@@ -129,14 +223,15 @@ int main(int argc, char** argv)
 		viewer = rgbVis(cloud);
 		//viewer = simpleVis(cloud);
 	}
- 
+
 	// Main loop.
 	while (! viewer->wasStopped()){
 		viewer->spinOnce (100);
 		boost::this_thread::sleep(boost::posix_time::seconds(1));
 	}
- 
-	if (! justVisualize)
-		openniGrabber->stop();
-}
 
+//	if (! justVisualize)
+	//	openniGrabber->stop();
+
+}
+*/

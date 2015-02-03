@@ -6,7 +6,33 @@
 
 #IncludeRegexTransform: 
 
-/home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/TestCode/prg2 ransac/src/ransac.cpp
+/home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/ransac.cpp
+pcl/io/openni_grabber.h
+-
+pcl/visualization/cloud_viewer.h
+-
+iostream
+-
+pcl/console/parse.h
+-
+pcl/filters/extract_indices.h
+-
+pcl/io/pcd_io.h
+-
+pcl/point_types.h
+-
+pcl/sample_consensus/ransac.h
+-
+pcl/sample_consensus/sac_model_plane.h
+-
+pcl/sample_consensus/sac_model_sphere.h
+-
+pcl/visualization/pcl_visualizer.h
+-
+boost/thread/thread.hpp
+-
+pcl/console/parse.h
+-
 iostream
 -
 pcl/console/parse.h
