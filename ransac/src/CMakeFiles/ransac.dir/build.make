@@ -34,11 +34,14 @@ RM = /usr/bin/cmake -E remove -f
 # Escaping for special characters.
 EQUALS = =
 
+# The program to use to edit the cache.
+CMAKE_EDIT_COMMAND = /usr/bin/ccmake
+
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac
+CMAKE_SOURCE_DIR = /home/krang/Desktop/Test/KinectPCLDemo/ransac
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src
+CMAKE_BINARY_DIR = /home/krang/Desktop/Test/KinectPCLDemo/ransac/src
 
 # Include any dependencies generated for this target.
 include CMakeFiles/ransac.dir/depend.make
@@ -51,17 +54,17 @@ include CMakeFiles/ransac.dir/flags.make
 
 CMakeFiles/ransac.dir/ransac.cpp.o: CMakeFiles/ransac.dir/flags.make
 CMakeFiles/ransac.dir/ransac.cpp.o: ransac.cpp
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/krang/Desktop/Test/KinectPCLDemo/ransac/src/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/ransac.dir/ransac.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/ransac.dir/ransac.cpp.o -c /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/ransac.cpp
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -o CMakeFiles/ransac.dir/ransac.cpp.o -c /home/krang/Desktop/Test/KinectPCLDemo/ransac/src/ransac.cpp
 
 CMakeFiles/ransac.dir/ransac.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/ransac.dir/ransac.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/ransac.cpp > CMakeFiles/ransac.dir/ransac.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -E /home/krang/Desktop/Test/KinectPCLDemo/ransac/src/ransac.cpp > CMakeFiles/ransac.dir/ransac.cpp.i
 
 CMakeFiles/ransac.dir/ransac.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/ransac.dir/ransac.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/ransac.cpp -o CMakeFiles/ransac.dir/ransac.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -S /home/krang/Desktop/Test/KinectPCLDemo/ransac/src/ransac.cpp -o CMakeFiles/ransac.dir/ransac.cpp.s
 
 CMakeFiles/ransac.dir/ransac.cpp.o.requires:
 .PHONY : CMakeFiles/ransac.dir/ransac.cpp.o.requires
@@ -200,6 +203,6 @@ CMakeFiles/ransac.dir/clean:
 .PHONY : CMakeFiles/ransac.dir/clean
 
 CMakeFiles/ransac.dir/depend:
-	cd /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src /home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/CMakeFiles/ransac.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/krang/Desktop/Test/KinectPCLDemo/ransac/src && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/krang/Desktop/Test/KinectPCLDemo/ransac /home/krang/Desktop/Test/KinectPCLDemo/ransac /home/krang/Desktop/Test/KinectPCLDemo/ransac/src /home/krang/Desktop/Test/KinectPCLDemo/ransac/src /home/krang/Desktop/Test/KinectPCLDemo/ransac/src/CMakeFiles/ransac.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/ransac.dir/depend
 
