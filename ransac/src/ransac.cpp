@@ -1,3 +1,5 @@
+///home/krang/Desktop/Test/KinectPCLDemo/ransac/src
+
 #include <pcl/io/openni_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <iostream>
@@ -12,7 +14,8 @@
 #include <pcl/features/integral_image_normal.h>
 #include <boost/thread/thread.hpp>
 #include <pcl/console/parse.h>
-
+// #include <pcl/normal_3d.h>
+#include <limits>
 
 
 class SimpleOpenNIViewer
@@ -22,6 +25,37 @@ class SimpleOpenNIViewer
 
 public:
 	SimpleOpenNIViewer () : viewer ("PCL OpenNI Viewer") {}
+
+
+
+	template <typename PointT> void customCopyPointCloud (const pcl::PointCloud<PointT> &cloud_in, const std::vector<int> &indices, pcl::PointCloud<PointT> &cloud_out){
+	  // Do we want to copy everything?
+	  if (indices.size () == cloud_in.points.size ())
+	  {
+	  cloud_out = cloud_in;
+	  return;
+	  }
+	  // Allocate enough space and copy the basics
+	  cloud_out.points.resize (indices.size ());
+	  cloud_out.header = cloud_in.header;
+	  // cloud_out.width = static_cast<uint32_t>(indices.size ());
+	  // cloud_out.height = 1;
+		cloud_out.width = cloud_in.width;
+		cloud_out.height = cloud_in.height;
+
+	  cloud_out.is_dense = cloud_in.is_dense;
+	  cloud_out.sensor_orientation_ = cloud_in.sensor_orientation_;
+	  cloud_out.sensor_origin_ = cloud_in.sensor_origin_;
+	  // Iterate over each point
+	  for (size_t i = 0; i < indices.size (); ++i)
+	  cloud_out.points[i] = cloud_in.points[indices[i]];
+
+		//remove NAN points from the cloud
+		std::vector<int> m;
+		pcl::removeNaNFromPointCloud(cloud_out,cloud_out, m);
+	 }
+
+
 
 	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud){
 
@@ -40,27 +74,43 @@ public:
 
 			//Apply
 			pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
-			ransac.setDistanceThreshold (.1);
+			ransac.setDistanceThreshold (.2);
 			ransac.computeModel();
 			ransac.getInliers(inliers);
 
+			// cout << "INLIERS";
+			// for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
+			// 	std::cout << *i << ' ';
+
 			//Copies all inliers of the model computed to another PointCloud
-			pcl::copyPointCloud<pcl::PointXYZRGBA>(*cloud, inliers, *finalcloud);
+			// pcl::copyPointCloud<pcl::PointXYZRGBA>(*cloud, inliers, *finalcloud);
+			customCopyPointCloud<pcl::PointXYZRGBA>(*cloud, inliers, *finalcloud);
+
+
 
 			// estimate normal
 			//get temp cloud
-			pcl::copyPointCloud<pcl::PointXYZ>(*tempCloud,*finalcloud);
-			//
-      pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
-      ne.setNormalEstimationMethod (ne.AVERAGE_3D_GRADIENT);
-      ne.setMaxDepthChangeFactor(0.02f);
-      ne.setNormalSmoothingSize(10.0f);
-      ne.setInputCloud(tempCloud);
-      ne.compute(*normals);
+
+			pcl::copyPointCloud<pcl::PointXYZRGBA>(*finalcloud,*tempCloud);
+
+
+
+
+
+			cout << "INPUT CLOUD SIZE: " << cloud->width << " " << cloud->height << "\n";
+			cout << "FINAL CLOUD SIZE: " << finalcloud->width << " " << finalcloud->height << "\n";
+			cout << "COPY CLOUD SIZE: " << tempCloud->width << " " << tempCloud->height << "\n";
+
+			// Object for normal estimation.
+			pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
+			normalEstimation.setInputCloud(tempCloud);
+			normalEstimation.setRadiusSearch(0.03);
+			pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZ>);
+			normalEstimation.setSearchMethod(kdtree);
+			normalEstimation.compute(*normals);
 
 		}
 
-		cout << "S";
 
 		if (!viewer.wasStopped()){
 			if(shouldRansac){
@@ -69,7 +119,7 @@ public:
 				viewer.showCloud (finalcloud);
 
 				//Print normals
-				cout << normals;
+				// std::cout << normals;
 
 			}
 			else{
