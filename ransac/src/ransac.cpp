@@ -16,7 +16,10 @@
 #include <pcl/console/parse.h>
 // #include <pcl/normal_3d.h>
 #include <limits>
-
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/organized_multi_plane_segmentation.h>
 
 class SimpleOpenNIViewer
 {
@@ -51,8 +54,8 @@ public:
 	  cloud_out.points[i] = cloud_in.points[indices[i]];
 
 		//remove NAN points from the cloud
-		std::vector<int> m;
-		pcl::removeNaNFromPointCloud(cloud_out,cloud_out, m);
+		// std::vector<int> m;
+		// pcl::removeNaNFromPointCloud(cloud_out,cloud_out, m);
 	 }
 
 
@@ -62,52 +65,72 @@ public:
 		bool shouldRansac = true;
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
-		pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud (new pcl::PointCloud<pcl::PointXYZ>);
+		// pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud (new pcl::PointCloud<pcl::PointXYZ>);
 
 		if(shouldRansac){
 
-			std::vector<int> inliers;
-
-			// created RandomSampleConsensus object and compute the appropriated model
-			pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA>::Ptr model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA> (cloud));
-
-
-			//Apply
-			pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
-			ransac.setDistanceThreshold (.2);
-			ransac.computeModel();
-			ransac.getInliers(inliers);
-
-			// cout << "INLIERS";
-			// for( std::vector<int>::const_iterator i = inliers.begin(); i != inliers.end(); ++i)
-			// 	std::cout << *i << ' ';
-
-			//Copies all inliers of the model computed to another PointCloud
-			// pcl::copyPointCloud<pcl::PointXYZRGBA>(*cloud, inliers, *finalcloud);
-			customCopyPointCloud<pcl::PointXYZRGBA>(*cloud, inliers, *finalcloud);
+			// std::vector<int> inliers;
+			// // created RandomSampleConsensus object and compute the appropriated model
+			// pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA>::Ptr model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA> (cloud));
+			// //Apply
+			// pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
+			// ransac.setDistanceThreshold (.2);
+			// ransac.computeModel();
+			// ransac.getInliers(inliers);
+			//
 
 
 
-			// estimate normal
-			//get temp cloud
+			// pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+			// pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+			// // Create the segmentation object
+			// pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
+			// // Optional
+			// seg.setOptimizeCoefficients (true);
+			// // Mandatory
+			// seg.setModelType (pcl::SACMODEL_PLANE);
+			// seg.setMethodType (pcl::SAC_RANSAC);
+			// seg.setDistanceThreshold (0.16);
+			// seg.setMaxIterations (100);
+			//
+			// seg.setInputCloud (cloud);
+			// seg.segment (*inliers, *coefficients);
+			//
+			//
+			// // Create the filtering object
+			// pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
+			// // Extract the inliers
+			// extract.setInputCloud (cloud);
+			// extract.setIndices (inliers);
+			// extract.setNegative (false);
+			// extract.filter (*finalcloud);
+			//
+			// std::cout << "Model coefficients: " << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
 
-			pcl::copyPointCloud<pcl::PointXYZRGBA>(*finalcloud,*tempCloud);
 
 
-
-
-
-			cout << "INPUT CLOUD SIZE: " << cloud->width << " " << cloud->height << "\n";
-			cout << "FINAL CLOUD SIZE: " << finalcloud->width << " " << finalcloud->height << "\n";
-			cout << "COPY CLOUD SIZE: " << tempCloud->width << " " << tempCloud->height << "\n";
-
-			// Object for normal estimation.
-			pcl::IntegralImageNormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
-			normalEstimation.setInputCloud(tempCloud);
-			normalEstimation.setRadiusSearch(0.03);
-			pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZ>);
-			normalEstimation.setSearchMethod(kdtree);
-			normalEstimation.compute(*normals);
+			// //All surface normals
+			// // Object for normal estimation.
+			// pcl::IntegralImageNormalEstimation<pcl::PointXYZRGBA, pcl::Normal> normalEstimation;
+			// normalEstimation.setInputCloud(cloud);
+			// normalEstimation.setRadiusSearch(0.03);
+			// pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZRGBA>);
+			// normalEstimation.setSearchMethod(kdtree);
+			// normalEstimation.compute(*normals);
+			// //ORganised Multi plane segmentation
+			// pcl::OrganizedMultiPlaneSegmentation<pcl::PointT, pcl::Normal, pcl::Label> mps;
+			// mps.setMinInliers(1000);
+			// mps.setAngularThreshold(0.017453*2.0); //2 degrees
+			// mps.setDistanceThreshold(0.2);
+			// mps.setInputNormals(normals);
+			// mps.setInputCloud(cloud);
+			// std::vector<pcl::PlanarRegion<PointT>> regions;
+			// mps.segmentAndRegine(regions);
+			//
+			// for (size_t i=0; i<regions.size(); i++){
+			// 	Eigen::Vector4f coeff = regions[i].getCoefficients();
+			// 	cout << coeff[0] <<" " <<  coeff[1] << " " << coeff[2] << " " << coeff[3];
+			// }
 
 		}
 
@@ -117,10 +140,6 @@ public:
 
 				//Show cloud
 				viewer.showCloud (finalcloud);
-
-				//Print normals
-				// std::cout << normals;
-
 			}
 			else{
 				viewer.showCloud (cloud);
