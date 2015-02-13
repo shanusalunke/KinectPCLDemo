@@ -45,6 +45,8 @@ pcl/segmentation/extract_clusters.h
 -
 pcl/segmentation/organized_multi_plane_segmentation.h
 -
+pcl/common/projection_matrix.h
+-
 
 /usr/include/eigen3/Eigen/Cholesky
 Core

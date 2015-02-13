@@ -20,6 +20,7 @@
 #include <pcl/ModelCoefficients.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
+#include <pcl/common/projection_matrix.h>
 
 class SimpleOpenNIViewer
 {
@@ -65,59 +66,112 @@ public:
 		bool shouldRansac = true;
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
-		// pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud (new pcl::PointCloud<pcl::PointXYZ>);
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 
 		if(shouldRansac){
 
-			// std::vector<int> inliers;
-			// // created RandomSampleConsensus object and compute the appropriated model
-			// pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA>::Ptr model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA> (cloud));
-			// //Apply
-			// pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
-			// ransac.setDistanceThreshold (.2);
-			// ransac.computeModel();
-			// ransac.getInliers(inliers);
+
+
+
 			//
-
-
-
-			// pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-			// pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-			// // Create the segmentation object
-			// pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
-			// // Optional
-			// seg.setOptimizeCoefficients (true);
-			// // Mandatory
-			// seg.setModelType (pcl::SACMODEL_PLANE);
-			// seg.setMethodType (pcl::SAC_RANSAC);
-			// seg.setDistanceThreshold (0.16);
-			// seg.setMaxIterations (100);
+			// SEGMENTATION
 			//
+			pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+			pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+			// Create the segmentation object
+			pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
+			// Optional
+			seg.setOptimizeCoefficients (true);
+			// Mandatory
+			seg.setModelType (pcl::SACMODEL_PLANE);
+			seg.setMethodType (pcl::SAC_RANSAC);
+			seg.setDistanceThreshold (0.16);
+			seg.setMaxIterations (100);
+			// Do in loop
 			// seg.setInputCloud (cloud);
 			// seg.segment (*inliers, *coefficients);
-			//
-			//
-			// // Create the filtering object
-			// pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
-			// // Extract the inliers
+
+
+			// Create the filtering object
+			pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
+			// Extract the inliers in loop later
 			// extract.setInputCloud (cloud);
 			// extract.setIndices (inliers);
 			// extract.setNegative (false);
 			// extract.filter (*finalcloud);
+
+
+
+
+
+			int i = 0, nr_points = (int) cloud->points.size ();
+			pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color1 (finalcloud, 0, 255, 0);
+				// While 30% of the original cloud is still there
+				while (cloud->points.size () > 0.3 * nr_points && i<3)
+				{
+					std::cout << "Number of points: " << cloud->points.size()<<"\n";
+
+					// Segment the largest planar component from the remaining cloud
+					seg.setInputCloud (cloud);
+					seg.segment (*inliers, *coefficients);
+
+					// Extract the inliers
+					extract.setInputCloud (cloud);
+					extract.setIndices (inliers);
+					extract.setNegative (false);
+					extract.filter (*finalcloud);
+
+					//Visualize
+					// viewer->addPointCloud<pcl::PointXYZRGBA>(finalcloud, rgb, "sample");
+					// viewer.addPointCloud<pcl::PointXYZRGBA> (finalcloud, single_color1, "sample_cloud_1");
+					viewer.showCloud (finalcloud);
+
+					// Create the filtering object
+					extract.setNegative (true);
+					extract.setIndices (inliers);
+					extract.filter (*tempcloud);
+					pcl::copyPointCloud(*cloud, *tempcloud);
+
+					std::cout << "Number of points: " << cloud->points.size() << " temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
+					// cloud.swap (tempcloud);
+					// *cloud = (*tempcloud);
+					// cloud->points.swap (tempcloud->points);
+					// std::swap (cloud->width, tempcloud->width);
+					// std::swap (cloud.height, tempcloud.height);
+					// std::swap (cloud.is_dense, tempcloud.is_dense);
+					// std::swap (cloud.sensor_origin_, tempcloud.sensor_origin_);
+					// std::swap (cloud.sensor_orientation_, tempcloud.sensor_orientation_);
+
+					i++;
+
+					std::cout << "Model coefficients " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
+				}
+
+
+
+			// //
+			// // RANSAC
+			// //
+			// std::vector<int> r_inliers;
+			// // created RandomSampleConsensus object and compute the appropriated model
+			// pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA>::Ptr model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA> (finalcloud));
+			// //Apply
+			// pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
+			// ransac.setDistanceThreshold (.2);
+			// ransac.computeModel();
+			// ransac.getInliers(r_inliers);
+			// pcl::copyPointCloud(*finalcloud, r_inliers, *finalcloud);
 			//
-			// std::cout << "Model coefficients: " << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
 
 
-
-			// //All surface normals
-			// // Object for normal estimation.
+			// //All surface normals from an organized point cloud
 			// pcl::IntegralImageNormalEstimation<pcl::PointXYZRGBA, pcl::Normal> normalEstimation;
 			// normalEstimation.setInputCloud(cloud);
 			// normalEstimation.setRadiusSearch(0.03);
 			// pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZRGBA>);
 			// normalEstimation.setSearchMethod(kdtree);
 			// normalEstimation.compute(*normals);
-			// //ORganised Multi plane segmentation
+			// //Organised Multi plane segmentation
 			// pcl::OrganizedMultiPlaneSegmentation<pcl::PointT, pcl::Normal, pcl::Label> mps;
 			// mps.setMinInliers(1000);
 			// mps.setAngularThreshold(0.017453*2.0); //2 degrees
@@ -139,7 +193,7 @@ public:
 			if(shouldRansac){
 
 				//Show cloud
-				viewer.showCloud (finalcloud);
+				// viewer.showCloud (finalcloud);
 			}
 			else{
 				viewer.showCloud (cloud);
