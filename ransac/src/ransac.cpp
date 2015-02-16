@@ -22,6 +22,8 @@
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 #include <pcl/common/projection_matrix.h>
 
+#include <pcl/surface/convex_hull.h>
+
 class SimpleOpenNIViewer
 {
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud;// = new pcl::PointCloud<pcl::PointXYZRGB>;
@@ -67,6 +69,7 @@ public:
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
+		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
 
 		if(shouldRansac){
 
@@ -119,6 +122,7 @@ public:
 					extract.setInputCloud (cloud);
 					extract.setIndices (inliers);
 					extract.setNegative (false);
+					extract.setKeepOrganized(true);
 					extract.filter (*finalcloud);
 
 					//Visualize
@@ -131,9 +135,10 @@ public:
 					extract.setIndices (inliers);
 					extract.filter (*tempcloud);
 					pcl::copyPointCloud(*cloud, *tempcloud);
-
-					std::cout << "Number of points: " << cloud->points.size() << " temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
 					// cloud.swap (tempcloud);
+
+					std::cout << "Number of points: " << cloud->points.size()  << " final: "<< finalcloud->points.size() << " temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
+
 					// *cloud = (*tempcloud);
 					// cloud->points.swap (tempcloud->points);
 					// std::swap (cloud->width, tempcloud->width);
@@ -186,14 +191,34 @@ public:
 			// 	cout << coeff[0] <<" " <<  coeff[1] << " " << coeff[2] << " " << coeff[3];
 			// }
 
-		}
+
+			//CONVEX HULL
+			pcl::copyPointCloud(*finalcloud, *hullcloud);
+			std::vector<int> hullindices;
+			pcl::removeNaNFromPointCloud(*hullcloud, *hullcloud, hullindices);
+			std::cout << "Hullcloud: " << hullcloud->points.size() <<"\n";
+			pcl::ConvexHull<pcl::PointXYZ> cHull;
+			pcl::PointCloud<pcl::PointXYZ> cHull_points;
+			cHull.setInputCloud(hullcloud);
+			cHull.setComputeAreaVolume(true);
+			cHull.reconstruct (cHull_points);
+			std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
+			cout << "CONVEX HULL: " << cHull.getTotalArea() <<"\n";
+			cout << "CONVEX HULL: " << cHull.getTotalVolume() <<"\n";
+
+
+
+			//TEXTURE: Eignfaces
+
+
+		}//end of if
 
 
 		if (!viewer.wasStopped()){
 			if(shouldRansac){
 
 				//Show cloud
-				// viewer.showCloud (finalcloud);
+				viewer.showCloud (finalcloud);
 			}
 			else{
 				viewer.showCloud (cloud);
