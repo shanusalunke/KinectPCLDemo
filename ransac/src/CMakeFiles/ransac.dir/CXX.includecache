@@ -49,6 +49,10 @@ pcl/common/projection_matrix.h
 -
 pcl/surface/convex_hull.h
 -
+pcl/point_types.h
+-
+pcl/features/normal_3d.h
+-
 
 /usr/include/eigen3/Eigen/Cholesky
 Core
@@ -1688,6 +1692,10 @@ cstddef
 pcl/features/integral_image_normal.h
 -
 
+/usr/include/pcl-1.7/pcl/features/impl/normal_3d.hpp
+pcl/features/normal_3d.h
+-
+
 /usr/include/pcl-1.7/pcl/features/integral_image2D.h
 vector
 -
@@ -1704,6 +1712,14 @@ pcl/features/feature.h
 pcl/features/integral_image2D.h
 -
 pcl/features/impl/integral_image_normal.hpp
+-
+
+/usr/include/pcl-1.7/pcl/features/normal_3d.h
+pcl/features/feature.h
+-
+pcl/common/centroid.h
+-
+pcl/features/impl/normal_3d.hpp
 -
 
 /usr/include/pcl-1.7/pcl/filters/boost.h

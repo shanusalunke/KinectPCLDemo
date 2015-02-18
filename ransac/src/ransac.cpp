@@ -24,6 +24,9 @@
 
 #include <pcl/surface/convex_hull.h>
 
+#include <pcl/point_types.h>
+#include <pcl/features/normal_3d.h>
+
 class SimpleOpenNIViewer
 {
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud;// = new pcl::PointCloud<pcl::PointXYZRGB>;
@@ -63,13 +66,16 @@ public:
 
 
 
-	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &cloud){
+	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
 
 		bool shouldRansac = true;
+		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
+
+		// pcl::copyPointCloud(*cloud, *ipcloud);
 
 		if(shouldRansac){
 
@@ -108,122 +114,93 @@ public:
 
 
 			int i = 0, nr_points = (int) cloud->points.size ();
+			bool shouldSegmentMore = true;
 			pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color1 (finalcloud, 0, 255, 0);
 				// While 30% of the original cloud is still there
-				while (cloud->points.size () > 0.3 * nr_points && i<3)
+				while (shouldSegmentMore)
 				{
-					std::cout << "Number of points: " << cloud->points.size()<<"\n";
+					// std::cout << "Number of points: " << cloud->points.size()<<"\n";
+					std::cout << "================= SEGMENT " << i+1 <<" =================\n";
+					std::cout << "Because " << cloud->points.size()<< " > " << (0.3 * nr_points) <<"\n";
 
 					// Segment the largest planar component from the remaining cloud
 					seg.setInputCloud (cloud);
 					seg.segment (*inliers, *coefficients);
 
-					// Extract the inliers
-					extract.setInputCloud (cloud);
-					extract.setIndices (inliers);
-					extract.setNegative (false);
-					extract.setKeepOrganized(true);
-					extract.filter (*finalcloud);
+					//IF We find a segment
+					if(inliers->indices.size () > 0)
+					{
+						// Extract the inliers
+						extract.setInputCloud (cloud);
+						extract.setIndices (inliers);
+						extract.setNegative (false);
+						extract.setKeepOrganized(true);
+						extract.filter (*finalcloud);
 
-					//Visualize
-					// viewer->addPointCloud<pcl::PointXYZRGBA>(finalcloud, rgb, "sample");
-					// viewer.addPointCloud<pcl::PointXYZRGBA> (finalcloud, single_color1, "sample_cloud_1");
-					viewer.showCloud (finalcloud);
+						// Create the filtering object
+						extract.setNegative (true);
+						extract.filter (*tempcloud);
+						// pcl::copyPointCloud(*cloud, *tempcloud);
+						cloud.swap (tempcloud);
 
-					// Create the filtering object
-					extract.setNegative (true);
-					extract.setIndices (inliers);
-					extract.filter (*tempcloud);
-					pcl::copyPointCloud(*cloud, *tempcloud);
-					// cloud.swap (tempcloud);
+						std::cout << "Number of points: \n cloud " << cloud->points.size() << "|" << nr_points << "\n final: "<< finalcloud->points.size() << "\n temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
+						std::cout << "Model coefficients " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
 
-					std::cout << "Number of points: " << cloud->points.size()  << " final: "<< finalcloud->points.size() << " temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
 
-					// *cloud = (*tempcloud);
-					// cloud->points.swap (tempcloud->points);
-					// std::swap (cloud->width, tempcloud->width);
-					// std::swap (cloud.height, tempcloud.height);
-					// std::swap (cloud.is_dense, tempcloud.is_dense);
-					// std::swap (cloud.sensor_origin_, tempcloud.sensor_origin_);
-					// std::swap (cloud.sensor_orientation_, tempcloud.sensor_orientation_);
+						// viewer.showCloud (finalcloud);
+						// viewer.showCloud (finalcloud);
+						viewer.showCloud (finalcloud);
+
+
+						//CONVEX HULL
+						pcl::copyPointCloud(*finalcloud, *hullcloud);
+						std::vector<int> hullindices;
+						pcl::removeNaNFromPointCloud(*hullcloud, *hullcloud, hullindices);
+						std::cout << "Hullcloud: " << hullcloud->points.size() <<"\n";
+						pcl::ConvexHull<pcl::PointXYZ> cHull;
+						pcl::PointCloud<pcl::PointXYZ> cHull_points;
+						cHull.setInputCloud(hullcloud);
+						cHull.setComputeAreaVolume(true);
+						cHull.reconstruct (cHull_points);
+						std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
+						cout << "CONVEX HULL: " << cHull.getTotalArea() <<"\n";
+						cout << "CONVEX HULL: " << cHull.getTotalVolume() <<"\n";
+
+
+
+						//TEXTURE: Eignfaces
+						Eigen::Vector4f xyz_centroid;
+						Eigen::Matrix3f covariance_matrix;
+						pcl::compute3DCentroid(*hullcloud, xyz_centroid);
+						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
+
+						cout << "COVARIANCEMATRIX: " << covariance_matrix << "\n";
+					}
 
 					i++;
+					if (cloud->points.size () > 0.3 * nr_points || inliers->indices.size () == 0){
+						cout << "-------------------------------------------------------------------------------------------------------------------------" <<"\n";
+						cout << "Cloud points: " << (cloud->points.size () > 0.3 * nr_points) <<"\n";
+						cout << "Inliers indices: " << (inliers->indices.size () == 0) <<"\n";
+						shouldSegmentMore = false;
+					}
 
-					std::cout << "Model coefficients " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
 				}
-
-
-
-			// //
-			// // RANSAC
-			// //
-			// std::vector<int> r_inliers;
-			// // created RandomSampleConsensus object and compute the appropriated model
-			// pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA>::Ptr model_p (new pcl::SampleConsensusModelPlane<pcl::PointXYZRGBA> (finalcloud));
-			// //Apply
-			// pcl::RandomSampleConsensus<pcl::PointXYZRGBA> ransac (model_p);
-			// ransac.setDistanceThreshold (.2);
-			// ransac.computeModel();
-			// ransac.getInliers(r_inliers);
-			// pcl::copyPointCloud(*finalcloud, r_inliers, *finalcloud);
-			//
-
-
-			// //All surface normals from an organized point cloud
-			// pcl::IntegralImageNormalEstimation<pcl::PointXYZRGBA, pcl::Normal> normalEstimation;
-			// normalEstimation.setInputCloud(cloud);
-			// normalEstimation.setRadiusSearch(0.03);
-			// pcl::search::KdTree<pcl::PointXYZRGBA>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZRGBA>);
-			// normalEstimation.setSearchMethod(kdtree);
-			// normalEstimation.compute(*normals);
-			// //Organised Multi plane segmentation
-			// pcl::OrganizedMultiPlaneSegmentation<pcl::PointT, pcl::Normal, pcl::Label> mps;
-			// mps.setMinInliers(1000);
-			// mps.setAngularThreshold(0.017453*2.0); //2 degrees
-			// mps.setDistanceThreshold(0.2);
-			// mps.setInputNormals(normals);
-			// mps.setInputCloud(cloud);
-			// std::vector<pcl::PlanarRegion<PointT>> regions;
-			// mps.segmentAndRegine(regions);
-			//
-			// for (size_t i=0; i<regions.size(); i++){
-			// 	Eigen::Vector4f coeff = regions[i].getCoefficients();
-			// 	cout << coeff[0] <<" " <<  coeff[1] << " " << coeff[2] << " " << coeff[3];
-			// }
-
-
-			//CONVEX HULL
-			pcl::copyPointCloud(*finalcloud, *hullcloud);
-			std::vector<int> hullindices;
-			pcl::removeNaNFromPointCloud(*hullcloud, *hullcloud, hullindices);
-			std::cout << "Hullcloud: " << hullcloud->points.size() <<"\n";
-			pcl::ConvexHull<pcl::PointXYZ> cHull;
-			pcl::PointCloud<pcl::PointXYZ> cHull_points;
-			cHull.setInputCloud(hullcloud);
-			cHull.setComputeAreaVolume(true);
-			cHull.reconstruct (cHull_points);
-			std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
-			cout << "CONVEX HULL: " << cHull.getTotalArea() <<"\n";
-			cout << "CONVEX HULL: " << cHull.getTotalVolume() <<"\n";
-
-
-
-			//TEXTURE: Eignfaces
 
 
 		}//end of if
 
 
-		if (!viewer.wasStopped()){
-			if(shouldRansac){
-
-				//Show cloud
-				viewer.showCloud (finalcloud);
-			}
-			else{
-				viewer.showCloud (cloud);
-			}
-		}
+		// if (!viewer.wasStopped()){
+		// 	if(shouldRansac){
+		//
+		// 		//Show cloud
+		// 		viewer.showCloud (finalcloud);
+		// 	}
+		// 	else{
+		// 		viewer.showCloud (cloud);
+		// 	}
+		// }
 
 	}
 

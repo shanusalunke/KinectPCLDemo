@@ -287,8 +287,10 @@ CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/feature.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/impl/feature.hpp
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/impl/integral_image2D.hpp
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/impl/integral_image_normal.hpp
+CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/impl/normal_3d.hpp
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/integral_image2D.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/integral_image_normal.h
+CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/features/normal_3d.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/filters/boost.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/filters/extract_indices.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/filters/filter.h
