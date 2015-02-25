@@ -308,6 +308,7 @@ CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/eigen.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/file_io.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/grabber.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/impl/pcd_io.hpp
+CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/impl/point_cloud_image_extractors.hpp
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/lzf.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/openni_camera/openni.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/openni_camera/openni_depth_image.h
@@ -320,6 +321,8 @@ CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/openni_camera/op
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/openni_camera/openni_ir_image.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/openni_grabber.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/pcd_io.h
+CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/png_io.h
+CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/io/point_cloud_image_extractors.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/kdtree/flann.h
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/kdtree/impl/kdtree_flann.hpp
 CMakeFiles/ransac.dir/ransac.cpp.o: /usr/include/pcl-1.7/pcl/kdtree/kdtree.h

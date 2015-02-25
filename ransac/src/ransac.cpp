@@ -26,6 +26,16 @@
 
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
+#include <pcl/io/png_io.h>
+
+// #include <direct.h>
+#include <json/json.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+
+
+int folder_number = 1;
 
 class SimpleOpenNIViewer
 {
@@ -65,8 +75,18 @@ public:
 	 }
 
 
-
 	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
+
+
+		//
+		// SAVE (create directory)
+		//
+		//std::string str("");
+		char* str;
+		sprintf(str, "%d", ::folder_number);
+		mkdir(str,0);
+
+
 
 		bool shouldRansac = true;
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
@@ -113,15 +133,15 @@ public:
 
 
 
-			int i = 0, nr_points = (int) cloud->points.size ();
+			int i = 1, nr_points = (int) cloud->points.size ();
 			bool shouldSegmentMore = true;
 			pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color1 (finalcloud, 0, 255, 0);
 				// While 30% of the original cloud is still there
 				while (shouldSegmentMore)
 				{
 					// std::cout << "Number of points: " << cloud->points.size()<<"\n";
-					std::cout << "================= SEGMENT " << i+1 <<" =================\n";
-					std::cout << "Because " << cloud->points.size()<< " > " << (0.3 * nr_points) <<"\n";
+					std::cout << "================= SEGMENT " << folder_number <<" =================\n";
+					// std::cout << "Because " << cloud->points.size()<< " > " << (0.3 * nr_points) <<"\n";
 
 					// Segment the largest planar component from the remaining cloud
 					seg.setInputCloud (cloud);
@@ -143,8 +163,8 @@ public:
 						// pcl::copyPointCloud(*cloud, *tempcloud);
 						cloud.swap (tempcloud);
 
-						std::cout << "Number of points: \n cloud " << cloud->points.size() << "|" << nr_points << "\n final: "<< finalcloud->points.size() << "\n temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
-						std::cout << "Model coefficients " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
+						// std::cout << "Number of points: \n cloud " << cloud->points.size() << "|" << nr_points << "\n final: "<< finalcloud->points.size() << "\n temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
+						// std::cout << "Model coefficients " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
 
 
 						// viewer.showCloud (finalcloud);
@@ -162,9 +182,9 @@ public:
 						cHull.setInputCloud(hullcloud);
 						cHull.setComputeAreaVolume(true);
 						cHull.reconstruct (cHull_points);
-						std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
-						cout << "CONVEX HULL: " << cHull.getTotalArea() <<"\n";
-						cout << "CONVEX HULL: " << cHull.getTotalVolume() <<"\n";
+						// std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
+						// cout << "CONVEX HULL: " << cHull.getTotalArea() <<"\n";
+						// cout << "CONVEX HULL: " << cHull.getTotalVolume() <<"\n";
 
 
 
@@ -174,7 +194,49 @@ public:
 						pcl::compute3DCentroid(*hullcloud, xyz_centroid);
 						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
 
-						cout << "COVARIANCEMATRIX: " << covariance_matrix << "\n";
+						// cout << "COVARIANCEMATRIX: " << covariance_matrix << "\n";
+
+
+
+
+						//
+						// SAVE
+						//
+						//std::string name2("");
+						//std::string name1("");
+						char* name1;
+						char* name2;
+						sprintf(name1, "%d", i);
+						sprintf(name2, "%d", ::folder_number);
+						std::string name = std::string(name1) + std::string(name2) + ".png";
+
+						// Save the image (cloud must be organized).
+						pcl::io::savePNGFile(name, *finalcloud, "rgb");
+
+						//Json
+						json_object* jObj	= json_object_new_object();
+
+						json_object* jNormals						= json_object_new_object();
+						json_object* jArea							= json_object_new_object();
+						json_object* jVolume						= json_object_new_object();
+						json_object* jCovarianceMatrix	= json_object_new_object();
+
+
+						//Normals
+						json_object_object_add(jNormals,"x",json_object_new_int(coefficients->values[0]));
+						json_object_object_add(jNormals,"y",json_object_new_int(coefficients->values[1]));
+						json_object_object_add(jNormals,"z",json_object_new_int(coefficients->values[2]));
+						json_object_object_add(jNormals,"d",json_object_new_int(coefficients->values[3]));
+
+
+						json_object_object_add(jObj,"normals",jNormals);
+						json_object_object_add(jObj,"surfaceArea",json_object_new_int(cHull.getTotalArea()));
+						json_object_object_add(jObj,"volume",json_object_new_int(cHull.getTotalVolume()));
+						// json_object_object_add(jObj,"covarianceMatrix",jn1);
+
+						//Write to file
+						cout << jObj;
+
 					}
 
 					i++;
@@ -191,17 +253,6 @@ public:
 		}//end of if
 
 
-		// if (!viewer.wasStopped()){
-		// 	if(shouldRansac){
-		//
-		// 		//Show cloud
-		// 		viewer.showCloud (finalcloud);
-		// 	}
-		// 	else{
-		// 		viewer.showCloud (cloud);
-		// 	}
-		// }
-
 	}
 
 	void run (){
@@ -212,7 +263,7 @@ public:
 		interface->start ();
 
 		while (!viewer.wasStopped()){
-			boost::this_thread::sleep (boost::posix_time::seconds (1));
+			boost::this_thread::sleep (boost::posix_time::seconds (5));
 		}
 
 		interface->stop ();
