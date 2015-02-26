@@ -53,16 +53,6 @@ pcl/point_types.h
 -
 pcl/features/normal_3d.h
 -
-pcl/io/png_io.h
--
-json/json.h
--
-stdio.h
--
-stdlib.h
--
-string
--
 
 /usr/include/eigen3/Eigen/Cholesky
 Core
@@ -1976,18 +1966,6 @@ sys/mman.h
 pcl/io/lzf.h
 -
 
-/usr/include/pcl-1.7/pcl/io/impl/point_cloud_image_extractors.hpp
-set
--
-map
--
-ctime
--
-cstdlib
--
-pcl/common/io.h
--
-
 /usr/include/pcl-1.7/pcl/io/lzf.h
 pcl/pcl_macros.h
 -
@@ -2136,30 +2114,6 @@ pcl/point_cloud.h
 pcl/io/file_io.h
 -
 pcl/io/impl/pcd_io.hpp
--
-
-/usr/include/pcl-1.7/pcl/io/png_io.h
-pcl/pcl_macros.h
--
-pcl/point_cloud.h
--
-pcl/point_types.h
--
-pcl/console/print.h
--
-string
--
-vector
--
-pcl/io/point_cloud_image_extractors.h
--
-
-/usr/include/pcl-1.7/pcl/io/point_cloud_image_extractors.h
-pcl/point_cloud.h
--
-pcl/PCLImage.h
--
-pcl/io/impl/point_cloud_image_extractors.hpp
 -
 
 /usr/include/pcl-1.7/pcl/kdtree/flann.h
