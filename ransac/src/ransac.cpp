@@ -26,6 +26,14 @@
 
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
+#include <fstream>
+#include <pcl/io/png_io.h>
+#include <string>
+ #include <sstream> 
+
+using namespace std;
+
+int folder_number = 0;
 
 class SimpleOpenNIViewer
 {
@@ -34,35 +42,6 @@ class SimpleOpenNIViewer
 
 public:
 	SimpleOpenNIViewer () : viewer ("PCL OpenNI Viewer") {}
-
-
-
-	template <typename PointT> void customCopyPointCloud (const pcl::PointCloud<PointT> &cloud_in, const std::vector<int> &indices, pcl::PointCloud<PointT> &cloud_out){
-	  // Do we want to copy everything?
-	  if (indices.size () == cloud_in.points.size ())
-	  {
-	  cloud_out = cloud_in;
-	  return;
-	  }
-	  // Allocate enough space and copy the basics
-	  cloud_out.points.resize (indices.size ());
-	  cloud_out.header = cloud_in.header;
-	  // cloud_out.width = static_cast<uint32_t>(indices.size ());
-	  // cloud_out.height = 1;
-		cloud_out.width = cloud_in.width;
-		cloud_out.height = cloud_in.height;
-
-	  cloud_out.is_dense = cloud_in.is_dense;
-	  cloud_out.sensor_orientation_ = cloud_in.sensor_orientation_;
-	  cloud_out.sensor_origin_ = cloud_in.sensor_origin_;
-	  // Iterate over each point
-	  for (size_t i = 0; i < indices.size (); ++i)
-	  cloud_out.points[i] = cloud_in.points[indices[i]];
-
-		//remove NAN points from the cloud
-		// std::vector<int> m;
-		// pcl::removeNaNFromPointCloud(cloud_out,cloud_out, m);
-	 }
 
 
 
@@ -75,7 +54,25 @@ public:
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
 
-		// pcl::copyPointCloud(*cloud, *ipcloud);
+
+
+		//
+		// SAVE (create directory)
+		//
+		//char* str;
+		// char* imgname;
+		// char* filename;
+		//
+		//sprintf(str, "%d", ::folder_number);
+		
+		::folder_number++;
+		std::ostringstream ostr; //output string stream
+		ostr << ::folder_number;
+		string str = ostr.str();
+		cout << "------------------------------------------------------" << str <<"\n";
+		mkdir(str.c_str(),0);
+
+
 
 		if(shouldRansac){
 
@@ -175,6 +172,34 @@ public:
 						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
 
 						cout << "COVARIANCEMATRIX: " << covariance_matrix << "\n";
+
+
+						std::ostringstream ostr1; //output string stream
+						ostr1 << ::folder_number << "/" << i << ".png";
+						string imgname = ostr1.str();
+						
+						std::ostringstream ostr2; //output string stream
+						ostr2 << ::folder_number << "/" << i << ".json";
+						string filename = ostr2.str();
+						
+						
+						 //sprintf(imgname, "%d/%d.png", i, ::folder_number);
+						 //sprintf(filename, "%d/%d.json", i, ::folder_number);
+						 pcl::io::savePNGFile(imgname, *finalcloud, "rgb");
+						 //Write to file
+						 ofstream myfile;
+						myfile.open(filename.c_str());
+						 myfile << "{";
+						 //Normals
+						 	myfile << "{ x:"<<coefficients->values[0] <<",y:"<< coefficients->values[1] <<",z:"<<coefficients->values[2]<<",d:"<<coefficients->values[3] << "},";
+						 	//Surface Area
+						 	myfile << "{ area:"<< cHull.getTotalArea() << "},";
+						 	//Volume
+						 	myfile << "{ volume:"<< cHull.getTotalVolume() << "},";
+						 	//Covariance
+						
+						 myfile << "}";
+						 myfile.close();
 					}
 
 					i++;
