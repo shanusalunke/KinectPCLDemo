@@ -4,7 +4,7 @@ SET(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/krang/Desktop/Test/KinectPCLDemo/ransac/src/ransac.cpp" "/home/krang/Desktop/Test/KinectPCLDemo/ransac/src/CMakeFiles/ransac.dir/ransac.cpp.o"
+  "/home/krang/KinectPCLDemo/ransac/src/ransac.cpp" "/home/krang/KinectPCLDemo/ransac/src/CMakeFiles/ransac.dir/ransac.cpp.o"
   )
 SET(CMAKE_CXX_COMPILER_ID "GNU")
 

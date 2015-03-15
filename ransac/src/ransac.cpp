@@ -65,12 +65,13 @@ public:
 		//
 		//sprintf(str, "%d", ::folder_number);
 		
+		string foldername = "chair1/";
 		::folder_number++;
 		std::ostringstream ostr; //output string stream
-		ostr << ::folder_number;
+		ostr << foldername;
 		string str = ostr.str();
 		cout << "------------------------------------------------------" << str <<"\n";
-		mkdir(str.c_str(),0);
+		mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 
 
 
@@ -175,11 +176,11 @@ public:
 
 
 						std::ostringstream ostr1; //output string stream
-						ostr1 << ::folder_number << "/" << i << ".png";
+						ostr1 << foldername << ::folder_number << i << ".png";
 						string imgname = ostr1.str();
 						
 						std::ostringstream ostr2; //output string stream
-						ostr2 << ::folder_number << "/" << i << ".json";
+						ostr2 << foldername << ::folder_number << i << ".json";
 						string filename = ostr2.str();
 						
 						
@@ -191,12 +192,13 @@ public:
 						myfile.open(filename.c_str());
 						 myfile << "{";
 						 //Normals
-						 	myfile << "{ x:"<<coefficients->values[0] <<",y:"<< coefficients->values[1] <<",z:"<<coefficients->values[2]<<",d:"<<coefficients->values[3] << "},";
+						 	myfile << "\"normals\":{ \"x\":"<<coefficients->values[0] <<",\"y\":"<< coefficients->values[1] <<",\"z\":"<<coefficients->values[2]<<",\"d\":"<<coefficients->values[3] << "},";
 						 	//Surface Area
-						 	myfile << "{ area:"<< cHull.getTotalArea() << "},";
+						 	myfile << "\"area\":"<< cHull.getTotalArea() << ",";
 						 	//Volume
-						 	myfile << "{ volume:"<< cHull.getTotalVolume() << "},";
+						 	myfile << "\"volume\":"<< cHull.getTotalVolume() << ",";
 						 	//Covariance
+							myfile << "\"covariance\":"<< covariance_matrix << ",";
 						
 						 myfile << "}";
 						 myfile.close();

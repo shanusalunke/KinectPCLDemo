@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/krang/Desktop/Test/KinectPCLDemo/ransac/src/ransac.cpp
+/home/krang/KinectPCLDemo/ransac/src/ransac.cpp
 pcl/io/openni_grabber.h
 -
 pcl/visualization/cloud_viewer.h
