@@ -38,7 +38,6 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/intensity_gradient.h>
 #include <pcl/features/rift.h>
-#include <pcl/features/vfh.h>
  
 typedef pcl::Histogram<32> RIFT32;
 using namespace std;
@@ -62,7 +61,7 @@ public:
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
 		pcl::PointCloud<pcl::IntensityGradient>::Ptr gradients(new pcl::PointCloud<pcl::IntensityGradient>);
-		pcl::PointCloud<RIFT32>::Ptr descriptors(new pcl::PointCloud<RIFT32>);
+		pcl::PointCloud<RIFT32>::Ptr descriptors(new pcl::PointCloud<RIFT32>());
 		pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIntensity(new pcl::PointCloud<pcl::PointXYZI>);
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgbcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -153,7 +152,7 @@ public:
 						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
 						cout << "Covariance Matrix: " << covariance_matrix << "\n";
 						
-												
+						
 						//
 						//RIFT
 						//
@@ -195,31 +194,14 @@ public:
 						// Note: you must change the output histogram size to reflect the previous values.
 						rift.compute(*descriptors);
 						
-						
-						//
-						// Viewpoint Feature Histogram
-						//
-						pcl::VFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::VFHSignature308> vfh;
-						vfh.setInputCloud (hullcloud);
-						vfh.setInputNormals (normals);
-						pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-						vfh.setSearchMethod (tree);
-						// Output datasets
-						pcl::PointCloud<pcl::VFHSignature308>::Ptr vfhs (new pcl::PointCloud<pcl::VFHSignature308> ());
-						// Compute the features
-						vfh.compute (*vfhs);
-						
-						  
-						  
+
 						viewer.showCloud (finalcloud);
 						
 						cout <<"i="<<i<<"\n";
 						//std::cout << typeid(gradients).name() << '\n';
-						cout << "Normals2=" << normals->at(0).normal_x<< "\t"<< normals->at(0).normal_y<<"\t"<< normals->at(0).normal_z <<"\n";
-						cout <<"\nGriadients" << gradients->at(0).gradient_x<<"\t"<< gradients->at(0).gradient_y<<"\t"<< gradients->at(0).gradient_z;
-						cout << "\nDescriptors" << descriptors->at(0); //RIFT32 - histogram
-						
-						cout << "\nVFHS:  " << vfhs->points[0]; //RIFT32 - histogram
+						cout << "Normals2=" << normals->at(i).normal_x<< normals->at(i).normal_y<< normals->at(i).normal_z <<"\n";
+						cout <<"\nGriadients" << gradients->gradient[0]<< gradients->gradient[1];
+						//cout << "\nDescriptors" << descriptors;
 						
 						if(shouldSave){
 						
@@ -243,9 +225,7 @@ public:
 							myfile << "\"volume\":"<< cHull.getTotalVolume() << ",";
 							//Covariance
 							myfile << "\"covariance\":"<< covariance_matrix << ",";
-							myfile << "\"gradient\":{ \"x\":"<<gradients->at(0).gradient_x <<",\"y\":"<< gradients->at(0).gradient_y <<",\"z\":"<<gradients->at(0).gradient_z<<"},";
-							myfile << "\"riftdescriptors\":{" << descriptors->at(0) << "}";
-							myfile << "\"vfhs\":{" << vfhs->points[0] << "}";
+						
 							myfile << "}";
 							myfile.close();
 						}

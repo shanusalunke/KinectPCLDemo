@@ -1,4 +1,5 @@
 ///home/krang/Desktop/Test/KinectPCLDemo/ransac/src
+#include <typeinfo>
 
 #include <pcl/io/openni_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
@@ -14,6 +15,7 @@
 #include <pcl/features/integral_image_normal.h>
 #include <boost/thread/thread.hpp>
 #include <pcl/console/parse.h>
+
 // #include <pcl/normal_3d.h>
 #include <limits>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -29,8 +31,16 @@
 #include <fstream>
 #include <pcl/io/png_io.h>
 #include <string>
- #include <sstream> 
+#include <sstream> 
 
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types_conversion.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/features/intensity_gradient.h>
+#include <pcl/features/rift.h>
+#include <pcl/features/vfh.h>
+ 
+typedef pcl::Histogram<32> RIFT32;
 using namespace std;
 
 int folder_number = 0;
@@ -43,60 +53,43 @@ class SimpleOpenNIViewer
 public:
 	SimpleOpenNIViewer () : viewer ("PCL OpenNI Viewer") {}
 
-
-
 	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
 
 		bool shouldRansac = true;
+		bool shouldSave = false;
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
-		pcl::PointCloud<pcl::Normal>::Ptr normals (new pcl::PointCloud<pcl::Normal>);
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
-
-
-
-		//
-		// SAVE (create directory)
-		//
-		//char* str;
-		// char* imgname;
-		// char* filename;
-		//
-		//sprintf(str, "%d", ::folder_number);
+		pcl::PointCloud<pcl::IntensityGradient>::Ptr gradients(new pcl::PointCloud<pcl::IntensityGradient>);
+		pcl::PointCloud<RIFT32>::Ptr descriptors(new pcl::PointCloud<RIFT32>);
+		pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIntensity(new pcl::PointCloud<pcl::PointXYZI>);
+		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgbcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
 		
 		string foldername = "chair1/";
-		::folder_number++;
-		std::ostringstream ostr; //output string stream
-		ostr << foldername;
-		string str = ostr.str();
-		cout << "------------------------------------------------------" << str <<"\n";
-		mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
-
+		if (shouldSave){
+			::folder_number++;
+			std::ostringstream ostr; //output string stream
+			ostr << foldername;
+			string str = ostr.str();
+			cout << "------------------------------------------------------" << str <<"\n";
+			mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+		}
 
 		if(shouldRansac){
-
-
-
 
 			//
 			// SEGMENTATION
 			//
 			pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
 			pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-			// Create the segmentation object
 			pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
-			// Optional
-			seg.setOptimizeCoefficients (true);
-			// Mandatory
-			seg.setModelType (pcl::SACMODEL_PLANE);
-			seg.setMethodType (pcl::SAC_RANSAC);
-			seg.setDistanceThreshold (0.16);
-			seg.setMaxIterations (100);
-			// Do in loop
-			// seg.setInputCloud (cloud);
-			// seg.segment (*inliers, *coefficients);
+			seg.setOptimizeCoefficients (true); //Optional
+			seg.setModelType (pcl::SACMODEL_PLANE); //Mandatory
+			seg.setMethodType (pcl::SAC_RANSAC); //Mandatory
+			seg.setDistanceThreshold (0.16); //Mandatory
+			seg.setMaxIterations (100); //Mandatory
 
 
 			// Create the filtering object
@@ -107,10 +100,6 @@ public:
 			// extract.setNegative (false);
 			// extract.filter (*finalcloud);
 
-
-
-
-
 			int i = 0, nr_points = (int) cloud->points.size ();
 			bool shouldSegmentMore = true;
 			pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color1 (finalcloud, 0, 255, 0);
@@ -119,7 +108,7 @@ public:
 				{
 					// std::cout << "Number of points: " << cloud->points.size()<<"\n";
 					std::cout << "================= SEGMENT " << i+1 <<" =================\n";
-					std::cout << "Because " << cloud->points.size()<< " > " << (0.3 * nr_points) <<"\n";
+					//std::cout << "Because " << cloud->points.size()<< " > " << (0.3 * nr_points) <<"\n";
 
 					// Segment the largest planar component from the remaining cloud
 					seg.setInputCloud (cloud);
@@ -138,17 +127,10 @@ public:
 						// Create the filtering object
 						extract.setNegative (true);
 						extract.filter (*tempcloud);
-						// pcl::copyPointCloud(*cloud, *tempcloud);
 						cloud.swap (tempcloud);
 
-						std::cout << "Number of points: \n cloud " << cloud->points.size() << "|" << nr_points << "\n final: "<< finalcloud->points.size() << "\n temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
-						std::cout << "Model coefficients " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
-
-
-						// viewer.showCloud (finalcloud);
-						// viewer.showCloud (finalcloud);
-						viewer.showCloud (finalcloud);
-
+						//std::cout << "Number of points: \n cloud " << cloud->points.size() << "|" << nr_points << "\n final: "<< finalcloud->points.size() << "\n temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
+						std::cout << "Normals: " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
 
 						//CONVEX HULL
 						pcl::copyPointCloud(*finalcloud, *hullcloud);
@@ -161,74 +143,123 @@ public:
 						cHull.setComputeAreaVolume(true);
 						cHull.reconstruct (cHull_points);
 						std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
-						cout << "CONVEX HULL: " << cHull.getTotalArea() <<"\n";
-						cout << "CONVEX HULL: " << cHull.getTotalVolume() <<"\n";
-
-
+						cout << "Area: " << cHull.getTotalArea() <<"\n";
+						cout << "Volume: " << cHull.getTotalVolume() <<"\n";
 
 						//TEXTURE: Eignfaces
 						Eigen::Vector4f xyz_centroid;
 						Eigen::Matrix3f covariance_matrix;
 						pcl::compute3DCentroid(*hullcloud, xyz_centroid);
 						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
+						cout << "Covariance Matrix: " << covariance_matrix << "\n";
+						
+												
+						//
+						//RIFT
+						//
+						// Convert the RGB to intensity.
+						pcl::copyPointCloud(*finalcloud, *rgbcloud);
+						//Remove NAN
+						std::vector<int> normalindices;
+						pcl::removeNaNFromPointCloud(*rgbcloud, *rgbcloud, hullindices);
+						pcl::PointCloudXYZRGBtoXYZI(*rgbcloud, *cloudIntensity);
+						
+						// Estimate the normals.
+						pcl::NormalEstimation<pcl::PointXYZI, pcl::Normal> normalEstimation;
+						normalEstimation.setInputCloud(cloudIntensity);
+						normalEstimation.setRadiusSearch(0.03);
+						pcl::search::KdTree<pcl::PointXYZI>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZI>);
+						normalEstimation.setSearchMethod(kdtree);
+						normalEstimation.compute(*normals);
+						
+						// Compute the intensity gradients.
+						pcl::IntensityGradientEstimation < pcl::PointXYZI, pcl::Normal, pcl::IntensityGradient,
+						pcl::common::IntensityFieldAccessor<pcl::PointXYZI> > ge;
+						ge.setInputCloud(cloudIntensity);
+						ge.setInputNormals(normals);
+						ge.setRadiusSearch(0.03);
+						ge.compute(*gradients);
+						
+						// RIFT estimation object.
+						pcl::RIFTEstimation<pcl::PointXYZI, pcl::IntensityGradient, RIFT32> rift;
+						rift.setInputCloud(cloudIntensity);
+						rift.setSearchMethod(kdtree);
+						// Set the intensity gradients to use.
+						rift.setInputGradient(gradients);
+						// Radius, to get all neighbors within.
+						rift.setRadiusSearch(0.02);
+						// Set the number of bins to use in the distance dimension.
+						rift.setNrDistanceBins(4);
+						// Set the number of bins to use in the gradient orientation dimension.
+						rift.setNrGradientBins(8);
+						// Note: you must change the output histogram size to reflect the previous values.
+						rift.compute(*descriptors);
+						
+						
+						//
+						// Viewpoint Feature Histogram
+						//
+						pcl::VFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::VFHSignature308> vfh;
+						vfh.setInputCloud (hullcloud);
+						vfh.setInputNormals (normals);
+						pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+						vfh.setSearchMethod (tree);
+						// Output datasets
+						pcl::PointCloud<pcl::VFHSignature308>::Ptr vfhs (new pcl::PointCloud<pcl::VFHSignature308> ());
+						// Compute the features
+						vfh.compute (*vfhs);
+						
+						  
+						  
+						viewer.showCloud (finalcloud);
+						
+						cout <<"i="<<i<<"\n";
+						//std::cout << typeid(gradients).name() << '\n';
+						cout << "Normals2=" << normals->at(0).normal_x<< "\t"<< normals->at(0).normal_y<<"\t"<< normals->at(0).normal_z <<"\n";
+						cout <<"\nGriadients" << gradients->at(0).gradient_x<<"\t"<< gradients->at(0).gradient_y<<"\t"<< gradients->at(0).gradient_z;
+						cout << "\nDescriptors" << descriptors->at(0); //RIFT32 - histogram
+						
+						cout << "\nVFHS:  " << vfhs->points[0]; //RIFT32 - histogram
+						
+						if(shouldSave){
+						
+							std::ostringstream ostr1; //output string stream
+							ostr1 << foldername << ::folder_number << i << ".png";
+							string imgname = ostr1.str();
+						
+							std::ostringstream ostr2; //output string stream
+							ostr2 << foldername << ::folder_number << i << ".json";
+							string filename = ostr2.str();
 
-						cout << "COVARIANCEMATRIX: " << covariance_matrix << "\n";
-
-
-						std::ostringstream ostr1; //output string stream
-						ostr1 << foldername << ::folder_number << i << ".png";
-						string imgname = ostr1.str();
-						
-						std::ostringstream ostr2; //output string stream
-						ostr2 << foldername << ::folder_number << i << ".json";
-						string filename = ostr2.str();
-						
-						
-						 //sprintf(imgname, "%d/%d.png", i, ::folder_number);
-						 //sprintf(filename, "%d/%d.json", i, ::folder_number);
-						 pcl::io::savePNGFile(imgname, *finalcloud, "rgb");
-						 //Write to file
-						 ofstream myfile;
-						myfile.open(filename.c_str());
-						 myfile << "{";
-						 //Normals
-						 	myfile << "'normals':{ 'x':"<<coefficients->values[0] <<",'y':"<< coefficients->values[1] <<",'z':"<<coefficients->values[2]<<",'d':"<<coefficients->values[3] << "},";
-						 	//Surface Area
-						 	myfile << "'area':"<< cHull.getTotalArea() << ",";
-						 	//Volume
-						 	myfile << "'volume':"<< cHull.getTotalVolume() << ",";
-						 	//Covariance
-							myfile << "'covariance':"<< covariance_matrix << ",";
-						
-						 myfile << "}";
-						 myfile.close();
+							pcl::io::savePNGFile(imgname, *finalcloud, "rgb");
+							ofstream myfile;
+							myfile.open(filename.c_str());
+							myfile << "{";
+							//Normals
+							myfile << "\"normals\":{ \"x\":"<<coefficients->values[0] <<",\"y\":"<< coefficients->values[1] <<",\"z\":"<<coefficients->values[2]<<",\"d\":"<<coefficients->values[3] << "},";
+							//Surface Area
+							myfile << "\"area\":"<< cHull.getTotalArea() << ",";
+							//Volume
+							myfile << "\"volume\":"<< cHull.getTotalVolume() << ",";
+							//Covariance
+							myfile << "\"covariance\":"<< covariance_matrix << ",";
+							myfile << "\"gradient\":{ \"x\":"<<gradients->at(0).gradient_x <<",\"y\":"<< gradients->at(0).gradient_y <<",\"z\":"<<gradients->at(0).gradient_z<<"},";
+							myfile << "\"riftdescriptors\":{" << descriptors->at(0) << "}";
+							myfile << "\"vfhs\":{" << vfhs->points[0] << "}";
+							myfile << "}";
+							myfile.close();
+						}
 					}
 
 					i++;
-					if (cloud->points.size () > 0.3 * nr_points || inliers->indices.size () == 0){
+					if (cloud->points.size () < 0.3 * nr_points || inliers->indices.size () == 0){
 						cout << "-------------------------------------------------------------------------------------------------------------------------" <<"\n";
 						cout << "Cloud points: " << (cloud->points.size () > 0.3 * nr_points) <<"\n";
 						cout << "Inliers indices: " << (inliers->indices.size () == 0) <<"\n";
 						shouldSegmentMore = false;
 					}
-
 				}
-
-
 		}//end of if
-
-
-		// if (!viewer.wasStopped()){
-		// 	if(shouldRansac){
-		//
-		// 		//Show cloud
-		// 		viewer.showCloud (finalcloud);
-		// 	}
-		// 	else{
-		// 		viewer.showCloud (cloud);
-		// 	}
-		// }
-
 	}
 
 	void run (){
@@ -241,7 +272,6 @@ public:
 		while (!viewer.wasStopped()){
 			boost::this_thread::sleep (boost::posix_time::seconds (1));
 		}
-
 		interface->stop ();
 }
 

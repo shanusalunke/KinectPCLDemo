@@ -6,7 +6,9 @@
 
 #IncludeRegexTransform: 
 
-/home/krang/KinectPCLDemo/ransac/src/ransac.cpp
+/home/shanu/Desktop/GATECH/Projects/PredctingObjectDynamics/KinectPCLDemo/ransac/src/ransac.cpp
+typeinfo
+-
 pcl/io/openni_grabber.h
 -
 pcl/visualization/cloud_viewer.h
@@ -60,6 +62,18 @@ pcl/io/png_io.h
 string
 -
 sstream
+-
+pcl/io/pcd_io.h
+-
+pcl/point_types_conversion.h
+-
+pcl/features/normal_3d.h
+-
+pcl/features/intensity_gradient.h
+-
+pcl/features/rift.h
+-
+pcl/features/vfh.h
 -
 
 /usr/include/eigen3/Eigen/Cholesky
@@ -1552,6 +1566,10 @@ pcl/common/concatenate.h
 pcl/console/print.h
 -
 
+/usr/include/pcl-1.7/pcl/common/impl/intensity.hpp
+pcl/point_types.h
+-
+
 /usr/include/pcl-1.7/pcl/common/impl/io.hpp
 pcl/common/concatenate.h
 -
@@ -1565,6 +1583,10 @@ pcl/cloud_iterator.h
 -
 
 /usr/include/pcl-1.7/pcl/common/impl/transforms.hpp
+
+/usr/include/pcl-1.7/pcl/common/intensity.h
+pcl/common/impl/intensity.hpp
+-
 
 /usr/include/pcl-1.7/pcl/common/io.h
 string
@@ -1700,8 +1722,26 @@ cstddef
 pcl/features/integral_image_normal.h
 -
 
+/usr/include/pcl-1.7/pcl/features/impl/intensity_gradient.hpp
+pcl/features/intensity_gradient.h
+-
+
 /usr/include/pcl-1.7/pcl/features/impl/normal_3d.hpp
 pcl/features/normal_3d.h
+-
+
+/usr/include/pcl-1.7/pcl/features/impl/rift.hpp
+pcl/features/rift.h
+-
+
+/usr/include/pcl-1.7/pcl/features/impl/vfh.hpp
+pcl/features/vfh.h
+-
+pcl/features/pfh_tools.h
+-
+pcl/common/common.h
+-
+pcl/common/centroid.h
 -
 
 /usr/include/pcl-1.7/pcl/features/integral_image2D.h
@@ -1722,12 +1762,40 @@ pcl/features/integral_image2D.h
 pcl/features/impl/integral_image_normal.hpp
 -
 
+/usr/include/pcl-1.7/pcl/features/intensity_gradient.h
+pcl/features/feature.h
+-
+pcl/common/intensity.h
+-
+pcl/features/impl/intensity_gradient.hpp
+-
+
 /usr/include/pcl-1.7/pcl/features/normal_3d.h
 pcl/features/feature.h
 -
 pcl/common/centroid.h
 -
 pcl/features/impl/normal_3d.hpp
+-
+
+/usr/include/pcl-1.7/pcl/features/pfh_tools.h
+pcl/pcl_exports.h
+-
+Eigen/Core
+-
+
+/usr/include/pcl-1.7/pcl/features/rift.h
+pcl/features/feature.h
+-
+pcl/features/impl/rift.hpp
+-
+
+/usr/include/pcl-1.7/pcl/features/vfh.h
+pcl/point_types.h
+-
+pcl/features/feature.h
+-
+pcl/features/impl/vfh.hpp
 -
 
 /usr/include/pcl-1.7/pcl/filters/boost.h
@@ -2406,6 +2474,10 @@ boost/mpl/fold.hpp
 boost/mpl/vector.hpp
 -
 pcl/impl/point_types.hpp
+-
+
+/usr/include/pcl-1.7/pcl/point_types_conversion.h
+limits
 -
 
 /usr/include/pcl-1.7/pcl/register_point_struct.h
