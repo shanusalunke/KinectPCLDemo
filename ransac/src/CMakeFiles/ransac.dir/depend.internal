@@ -270,11 +270,9 @@ CMakeFiles/ransac.dir/ransac.cpp.o
  /usr/include/pcl-1.7/pcl/common/impl/common.hpp
  /usr/include/pcl-1.7/pcl/common/impl/copy_point.hpp
  /usr/include/pcl-1.7/pcl/common/impl/eigen.hpp
- /usr/include/pcl-1.7/pcl/common/impl/intensity.hpp
  /usr/include/pcl-1.7/pcl/common/impl/io.hpp
  /usr/include/pcl-1.7/pcl/common/impl/projection_matrix.hpp
  /usr/include/pcl-1.7/pcl/common/impl/transforms.hpp
- /usr/include/pcl-1.7/pcl/common/intensity.h
  /usr/include/pcl-1.7/pcl/common/io.h
  /usr/include/pcl-1.7/pcl/common/point_tests.h
  /usr/include/pcl-1.7/pcl/common/projection_matrix.h
@@ -290,17 +288,13 @@ CMakeFiles/ransac.dir/ransac.cpp.o
  /usr/include/pcl-1.7/pcl/features/impl/feature.hpp
  /usr/include/pcl-1.7/pcl/features/impl/integral_image2D.hpp
  /usr/include/pcl-1.7/pcl/features/impl/integral_image_normal.hpp
- /usr/include/pcl-1.7/pcl/features/impl/intensity_gradient.hpp
  /usr/include/pcl-1.7/pcl/features/impl/normal_3d.hpp
- /usr/include/pcl-1.7/pcl/features/impl/rift.hpp
- /usr/include/pcl-1.7/pcl/features/impl/vfh.hpp
+ /usr/include/pcl-1.7/pcl/features/impl/pfh.hpp
  /usr/include/pcl-1.7/pcl/features/integral_image2D.h
  /usr/include/pcl-1.7/pcl/features/integral_image_normal.h
- /usr/include/pcl-1.7/pcl/features/intensity_gradient.h
  /usr/include/pcl-1.7/pcl/features/normal_3d.h
+ /usr/include/pcl-1.7/pcl/features/pfh.h
  /usr/include/pcl-1.7/pcl/features/pfh_tools.h
- /usr/include/pcl-1.7/pcl/features/rift.h
- /usr/include/pcl-1.7/pcl/features/vfh.h
  /usr/include/pcl-1.7/pcl/filters/boost.h
  /usr/include/pcl-1.7/pcl/filters/extract_indices.h
  /usr/include/pcl-1.7/pcl/filters/filter.h

@@ -1,6 +1,5 @@
 ///home/krang/Desktop/Test/KinectPCLDemo/ransac/src
 #include <typeinfo>
-
 #include <pcl/io/openni_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <iostream>
@@ -15,7 +14,6 @@
 #include <pcl/features/integral_image_normal.h>
 #include <boost/thread/thread.hpp>
 #include <pcl/console/parse.h>
-
 // #include <pcl/normal_3d.h>
 #include <limits>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -23,23 +21,18 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 #include <pcl/common/projection_matrix.h>
-
 #include <pcl/surface/convex_hull.h>
-
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
 #include <fstream>
 #include <pcl/io/png_io.h>
 #include <string>
-#include <sstream> 
-
+#include <sstream>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types_conversion.h>
 #include <pcl/features/normal_3d.h>
-#include <pcl/features/intensity_gradient.h>
-#include <pcl/features/rift.h>
-#include <pcl/features/vfh.h>
- 
+#include <pcl/features/pfh.h>
+
 typedef pcl::Histogram<32> RIFT32;
 using namespace std;
 
@@ -56,17 +49,14 @@ public:
 	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
 
 		bool shouldRansac = true;
-		bool shouldSave = false;
+		bool shouldSave = true;
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
-		pcl::PointCloud<pcl::IntensityGradient>::Ptr gradients(new pcl::PointCloud<pcl::IntensityGradient>);
-		pcl::PointCloud<RIFT32>::Ptr descriptors(new pcl::PointCloud<RIFT32>);
-		pcl::PointCloud<pcl::PointXYZI>::Ptr cloudIntensity(new pcl::PointCloud<pcl::PointXYZI>);
 		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
 		pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgbcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-		
+
 		string foldername = "chair1/";
 		if (shouldSave){
 			::folder_number++;
@@ -152,81 +142,45 @@ public:
 						pcl::compute3DCentroid(*hullcloud, xyz_centroid);
 						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
 						cout << "Covariance Matrix: " << covariance_matrix << "\n";
-						
-												
-						//
-						//RIFT
-						//
-						// Convert the RGB to intensity.
-						pcl::copyPointCloud(*finalcloud, *rgbcloud);
+
+            //Point Feature Histogram
 						//Remove NAN
-						std::vector<int> normalindices;
-						pcl::removeNaNFromPointCloud(*rgbcloud, *rgbcloud, hullindices);
-						pcl::PointCloudXYZRGBtoXYZI(*rgbcloud, *cloudIntensity);
-						
+						// std::vector<int> normalindices;
+						// cout << hullcloud->points.size() <<"\t";
+						// pcl::removeNaNFromPointCloud(*hullcloud, *hullcloud, hullindices);
+						// cout << hullcloud->points.size() <<"\n";
+
 						// Estimate the normals.
-						pcl::NormalEstimation<pcl::PointXYZI, pcl::Normal> normalEstimation;
-						normalEstimation.setInputCloud(cloudIntensity);
-						normalEstimation.setRadiusSearch(0.03);
-						pcl::search::KdTree<pcl::PointXYZI>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZI>);
+						pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
+						normalEstimation.setInputCloud(hullcloud);
+						normalEstimation.setRadiusSearch(0.3);
+						pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZ>);
 						normalEstimation.setSearchMethod(kdtree);
 						normalEstimation.compute(*normals);
-						
-						// Compute the intensity gradients.
-						pcl::IntensityGradientEstimation < pcl::PointXYZI, pcl::Normal, pcl::IntensityGradient,
-						pcl::common::IntensityFieldAccessor<pcl::PointXYZI> > ge;
-						ge.setInputCloud(cloudIntensity);
-						ge.setInputNormals(normals);
-						ge.setRadiusSearch(0.03);
-						ge.compute(*gradients);
-						
-						// RIFT estimation object.
-						pcl::RIFTEstimation<pcl::PointXYZI, pcl::IntensityGradient, RIFT32> rift;
-						rift.setInputCloud(cloudIntensity);
-						rift.setSearchMethod(kdtree);
-						// Set the intensity gradients to use.
-						rift.setInputGradient(gradients);
-						// Radius, to get all neighbors within.
-						rift.setRadiusSearch(0.02);
-						// Set the number of bins to use in the distance dimension.
-						rift.setNrDistanceBins(4);
-						// Set the number of bins to use in the gradient orientation dimension.
-						rift.setNrGradientBins(8);
-						// Note: you must change the output histogram size to reflect the previous values.
-						rift.compute(*descriptors);
-						
-						
-						//
-						// Viewpoint Feature Histogram
-						//
-						pcl::VFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::VFHSignature308> vfh;
-						vfh.setInputCloud (hullcloud);
-						vfh.setInputNormals (normals);
-						pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
-						vfh.setSearchMethod (tree);
-						// Output datasets
-						pcl::PointCloud<pcl::VFHSignature308>::Ptr vfhs (new pcl::PointCloud<pcl::VFHSignature308> ());
-						// Compute the features
-						vfh.compute (*vfhs);
-						
-						  
-						  
+
+						cout << "\nDONE NORMALS\n";
+
+            // Create the PFH estimation class, and pass the input dataset+normals to it
+            pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
+            pfh.setInputCloud (hullcloud);
+            pfh.setInputNormals (normals);
+            pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
+            pfh.setSearchMethod (tree);
+            pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
+            pfh.setRadiusSearch (0.5);
+            pfh.compute (*pfhs);
+            cout << pfhs->points[0] <<"\n";
+
 						viewer.showCloud (finalcloud);
-						
+
 						cout <<"i="<<i<<"\n";
-						//std::cout << typeid(gradients).name() << '\n';
-						cout << "Normals2=" << normals->at(0).normal_x<< "\t"<< normals->at(0).normal_y<<"\t"<< normals->at(0).normal_z <<"\n";
-						cout <<"\nGriadients" << gradients->at(0).gradient_x<<"\t"<< gradients->at(0).gradient_y<<"\t"<< gradients->at(0).gradient_z;
-						cout << "\nDescriptors" << descriptors->at(0); //RIFT32 - histogram
-						
-						cout << "\nVFHS:  " << vfhs->points[0]; //RIFT32 - histogram
-						
+
 						if(shouldSave){
-						
+
 							std::ostringstream ostr1; //output string stream
 							ostr1 << foldername << ::folder_number << i << ".png";
 							string imgname = ostr1.str();
-						
+
 							std::ostringstream ostr2; //output string stream
 							ostr2 << foldername << ::folder_number << i << ".json";
 							string filename = ostr2.str();
@@ -243,9 +197,7 @@ public:
 							myfile << "\"volume\":"<< cHull.getTotalVolume() << ",";
 							//Covariance
 							myfile << "\"covariance\":"<< covariance_matrix << ",";
-							myfile << "\"gradient\":{ \"x\":"<<gradients->at(0).gradient_x <<",\"y\":"<< gradients->at(0).gradient_y <<",\"z\":"<<gradients->at(0).gradient_z<<"},";
-							myfile << "\"riftdescriptors\":{" << descriptors->at(0) << "}";
-							myfile << "\"vfhs\":{" << vfhs->points[0] << "}";
+
 							myfile << "}";
 							myfile.close();
 						}

@@ -1,6 +1,5 @@
 ///home/krang/Desktop/Test/KinectPCLDemo/ransac/src
 #include <typeinfo>
-
 #include <pcl/io/openni_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <iostream>
@@ -15,7 +14,6 @@
 #include <pcl/features/integral_image_normal.h>
 #include <boost/thread/thread.hpp>
 #include <pcl/console/parse.h>
-
 // #include <pcl/normal_3d.h>
 #include <limits>
 #include <pcl/segmentation/sac_segmentation.h>
@@ -23,16 +21,13 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/segmentation/organized_multi_plane_segmentation.h>
 #include <pcl/common/projection_matrix.h>
-
 #include <pcl/surface/convex_hull.h>
-
 #include <pcl/point_types.h>
 #include <pcl/features/normal_3d.h>
 #include <fstream>
 #include <pcl/io/png_io.h>
 #include <string>
 #include <sstream> 
-
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types_conversion.h>
 #include <pcl/features/normal_3d.h>
@@ -56,7 +51,7 @@ public:
 	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
 
 		bool shouldRansac = true;
-		bool shouldSave = false;
+		bool shouldSave = true;
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
 		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -217,8 +212,7 @@ public:
 						//std::cout << typeid(gradients).name() << '\n';
 						cout << "Normals2=" << normals->at(0).normal_x<< "\t"<< normals->at(0).normal_y<<"\t"<< normals->at(0).normal_z <<"\n";
 						cout <<"\nGriadients" << gradients->at(0).gradient_x<<"\t"<< gradients->at(0).gradient_y<<"\t"<< gradients->at(0).gradient_z;
-						cout << "\nDescriptors" << descriptors->at(0); //RIFT32 - histogram
-						
+						cout << "\nDescriptors" << descriptors->at(0); //RIFT32 - histogram						
 						cout << "\nVFHS:  " << vfhs->points[0]; //RIFT32 - histogram
 						
 						if(shouldSave){
@@ -244,8 +238,8 @@ public:
 							//Covariance
 							myfile << "\"covariance\":"<< covariance_matrix << ",";
 							myfile << "\"gradient\":{ \"x\":"<<gradients->at(0).gradient_x <<",\"y\":"<< gradients->at(0).gradient_y <<",\"z\":"<<gradients->at(0).gradient_z<<"},";
-							myfile << "\"riftdescriptors\":{" << descriptors->at(0) << "}";
-							myfile << "\"vfhs\":{" << vfhs->points[0] << "}";
+							myfile << "\"riftdescriptors\":\"" << descriptors->at(0) <<"\"";
+							myfile << "\"vfhs\":\"" << vfhs->points[0] << "\"";
 							myfile << "}";
 							myfile.close();
 						}
