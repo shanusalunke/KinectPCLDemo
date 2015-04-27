@@ -4,10 +4,30 @@
 // Standard includes
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
+
+ void my_sleep(unsigned msec) {
+   struct timespec req, rem;
+   int err;
+   req.tv_sec = msec / 1000;
+   req.tv_nsec = (msec % 1000) * 1000000;
+   while ((req.tv_sec != 0) || (req.tv_nsec != 0)) {
+     if (nanosleep(&req, &rem) == 0)
+       break;
+       err = errno;
+       // Interrupted; continue
+       if (err == EINTR) {
+         req.tv_sec = rem.tv_sec;
+         req.tv_nsec = rem.tv_nsec;
+       }
+       // Unhandleable error (EFAULT (bad pointer), EINVAL (bad timeval in tv_nsec), or ENOSYS (function not supported))
+       break;
+     }
+   }
 
 /**
- * Class to control Kinect's motor.
- */
+* Class to control Kinect's motor.
+*/
 class KinectMotor
 {
 public:
@@ -78,17 +98,16 @@ bool KinectMotor::Open()
         XnUChar buf[1]; // output buffer
 
         // Init motor
-        res = xnUSBSendControl(m_dev, (XnUSBControlType) 0xc0, 0x10, 0x00,
-0x00, buf, sizeof(buf), 0);
+        res = xnUSBSendControl(m_dev, (XnUSBControlType) 0xc0, 0x10, 0x00,0x00, buf, sizeof(buf), 0);
         if (res != XN_STATUS_OK) {
                 xnPrintError(res, "xnUSBSendControl failed");
                 Close();
                 return false;
         }
 
-        res = xnUSBSendControl(m_dev,
-XnUSBControlType::XN_USB_CONTROL_TYPE_VENDOR, 0x06, 0x01, 0x00, NULL,
-0, 0);
+        XnUSBControlType t = XN_USB_CONTROL_TYPE_VENDOR; //XnUSBControlType::XN_USB_CONTROL_TYPE_VENDOR
+
+        res = xnUSBSendControl(m_dev, t , 0x06, 0x01, 0x00, NULL,0, 0);
         if (res != XN_STATUS_OK) {
                 xnPrintError(res, "xnUSBSendControl failed");
                 Close();
@@ -110,8 +129,7 @@ bool KinectMotor::Move(int angle)
         XnStatus res;
 
         // Send move control request
-        res = xnUSBSendControl(m_dev, XN_USB_CONTROL_TYPE_VENDOR, 0x31,
-angle, 0x00, NULL, 0, 0);
+        res = xnUSBSendControl(m_dev, XN_USB_CONTROL_TYPE_VENDOR, 0x31,angle, 0x00, NULL, 0, 0);
         if (res != XN_STATUS_OK) {
                 xnPrintError(res, "xnUSBSendControl failed");
                 return false;
@@ -127,10 +145,10 @@ int main(int argc, char *argv[])
                 return 1;
 
         motor.Move(31); // move it up to 31 degree
-        Sleep(1000);
+        my_sleep(1000);
 
         motor.Move(-31); // move it down to 31 degree
-        Sleep(1000);
+        my_sleep(1000);
 
         motor.Move(0);
         return 0;

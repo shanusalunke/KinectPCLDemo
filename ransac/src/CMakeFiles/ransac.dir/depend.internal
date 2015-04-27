@@ -285,7 +285,9 @@ CMakeFiles/ransac.dir/ransac.cpp.o
  /usr/include/pcl-1.7/pcl/correspondence.h
  /usr/include/pcl-1.7/pcl/exceptions.h
  /usr/include/pcl-1.7/pcl/features/feature.h
+ /usr/include/pcl-1.7/pcl/features/fpfh.h
  /usr/include/pcl-1.7/pcl/features/impl/feature.hpp
+ /usr/include/pcl-1.7/pcl/features/impl/fpfh.hpp
  /usr/include/pcl-1.7/pcl/features/impl/integral_image2D.hpp
  /usr/include/pcl-1.7/pcl/features/impl/integral_image_normal.hpp
  /usr/include/pcl-1.7/pcl/features/impl/normal_3d.hpp
@@ -302,6 +304,8 @@ CMakeFiles/ransac.dir/ransac.cpp.o
  /usr/include/pcl-1.7/pcl/filters/impl/extract_indices.hpp
  /usr/include/pcl-1.7/pcl/filters/impl/filter.hpp
  /usr/include/pcl-1.7/pcl/filters/impl/filter_indices.hpp
+ /usr/include/pcl-1.7/pcl/filters/impl/voxel_grid.hpp
+ /usr/include/pcl-1.7/pcl/filters/voxel_grid.h
  /usr/include/pcl-1.7/pcl/for_each_type.h
  /usr/include/pcl-1.7/pcl/geometry/planar_polygon.h
  /usr/include/pcl-1.7/pcl/impl/cloud_iterator.hpp

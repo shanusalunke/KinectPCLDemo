@@ -1,5 +1,7 @@
 ///home/krang/Desktop/Test/KinectPCLDemo/ransac/src
 #include <typeinfo>
+#include <termios.h>
+#include <stdio.h>
 #include <pcl/io/openni_grabber.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <iostream>
@@ -32,199 +34,60 @@
 #include <pcl/point_types_conversion.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/pfh.h>
+#include <pcl/features/fpfh.h>
+#include <pcl/filters/voxel_grid.h>
 
 typedef pcl::Histogram<32> RIFT32;
 using namespace std;
 
 int folder_number = 0;
+int save_name = 0;
+char ch = 's';
 
 class SimpleOpenNIViewer
 {
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud;// = new pcl::PointCloud<pcl::PointXYZRGB>;
-	// pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud;// = new pcl::PointCloud<pcl::PointXYZRGB>;
+  // pcl::PointCloud<pcl::PointXYZRGB>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
 
 public:
-	SimpleOpenNIViewer () : viewer ("PCL OpenNI Viewer") {}
+  SimpleOpenNIViewer () : viewer ("PCL OpenNI Viewer") {}
 
-	void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
-
-		bool shouldRansac = true;
-		bool shouldSave = true;
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr finalcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
-		pcl::PointCloud<pcl::PointXYZRGBA>::Ptr tempcloud (new pcl::PointCloud<pcl::PointXYZRGBA>);
-		pcl::PointCloud<pcl::PointXYZ>::Ptr hullcloud (new pcl::PointCloud<pcl::PointXYZ>);
-		pcl::PointCloud<pcl::Normal>::Ptr normals(new pcl::PointCloud<pcl::Normal>);
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr rgbcloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-
-		string foldername = "chair1/";
-		if (shouldSave){
-			::folder_number++;
-			std::ostringstream ostr; //output string stream
-			ostr << foldername;
-			string str = ostr.str();
-			cout << "------------------------------------------------------" << str <<"\n";
-			mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-		}
-
-		if(shouldRansac){
-
-			//
-			// SEGMENTATION
-			//
-			pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-			pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-			pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
-			seg.setOptimizeCoefficients (true); //Optional
-			seg.setModelType (pcl::SACMODEL_PLANE); //Mandatory
-			seg.setMethodType (pcl::SAC_RANSAC); //Mandatory
-			seg.setDistanceThreshold (0.16); //Mandatory
-			seg.setMaxIterations (100); //Mandatory
+  void cloud_cb_ (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr &ipcloud){
 
 
-			// Create the filtering object
-			pcl::ExtractIndices<pcl::PointXYZRGBA> extract;
-			// Extract the inliers in loop later
-			// extract.setInputCloud (cloud);
-			// extract.setIndices (inliers);
-			// extract.setNegative (false);
-			// extract.filter (*finalcloud);
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGBA>(*ipcloud));
 
-			int i = 0, nr_points = (int) cloud->points.size ();
-			bool shouldSegmentMore = true;
-			pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color1 (finalcloud, 0, 255, 0);
-				// While 30% of the original cloud is still there
-				while (shouldSegmentMore)
-				{
-					// std::cout << "Number of points: " << cloud->points.size()<<"\n";
-					std::cout << "================= SEGMENT " << i+1 <<" =================\n";
-					//std::cout << "Because " << cloud->points.size()<< " > " << (0.3 * nr_points) <<"\n";
+    viewer.showCloud (cloud);
+    ::ch = getchar();
 
-					// Segment the largest planar component from the remaining cloud
-					seg.setInputCloud (cloud);
-					seg.segment (*inliers, *coefficients);
+    string foldername = "pcd/";
+    if (true){
+      ::folder_number++;
+      std::ostringstream ostr; //output string stream
+      ostr << foldername;
+      string str = ostr.str();
+      cout << "------------------------------------------------------" << str <<"\n";
+      mkdir(str.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+    }
 
-					//IF We find a segment
-					if(inliers->indices.size () > 0)
-					{
-						// Extract the inliers
-						extract.setInputCloud (cloud);
-						extract.setIndices (inliers);
-						extract.setNegative (false);
-						extract.setKeepOrganized(true);
-						extract.filter (*finalcloud);
+    //Save pcd
+    std::ostringstream ostr1; //output string stream
+    ostr1 << foldername << ::save_name << ".pcd";
+    string filename = ostr1.str();
+    // pcl::io::savePCDFile (filename, ipcloud);
+    pcl::io::savePCDFileASCII (filename, *cloud);
+  }
 
-						// Create the filtering object
-						extract.setNegative (true);
-						extract.filter (*tempcloud);
-						cloud.swap (tempcloud);
+  void run (){
+    pcl::Grabber* interface = new pcl::OpenNIGrabber();
+    boost::function<void (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind (&SimpleOpenNIViewer::cloud_cb_, this, _1);
+    interface->registerCallback (f);
+    interface->start();
 
-						//std::cout << "Number of points: \n cloud " << cloud->points.size() << "|" << nr_points << "\n final: "<< finalcloud->points.size() << "\n temp: "<< tempcloud->points.size() << " inliers: " << inliers->indices.size () <<"\n";
-						std::cout << "Normals: " << i << ":" << coefficients->values[0] << " " << coefficients->values[1] << " "<< coefficients->values[2] << " "<< coefficients->values[3] << std::endl;
-
-						//CONVEX HULL
-						pcl::copyPointCloud(*finalcloud, *hullcloud);
-						std::vector<int> hullindices;
-						pcl::removeNaNFromPointCloud(*hullcloud, *hullcloud, hullindices);
-						std::cout << "Hullcloud: " << hullcloud->points.size() <<"\n";
-						pcl::ConvexHull<pcl::PointXYZ> cHull;
-						pcl::PointCloud<pcl::PointXYZ> cHull_points;
-						cHull.setInputCloud(hullcloud);
-						cHull.setComputeAreaVolume(true);
-						cHull.reconstruct (cHull_points);
-						std::cout << "Hullcloud recinstruct: " << cHull_points.points.size() <<"\n";
-						cout << "Area: " << cHull.getTotalArea() <<"\n";
-						cout << "Volume: " << cHull.getTotalVolume() <<"\n";
-
-						//TEXTURE: Eignfaces
-						Eigen::Vector4f xyz_centroid;
-						Eigen::Matrix3f covariance_matrix;
-						pcl::compute3DCentroid(*hullcloud, xyz_centroid);
-						pcl::computeCovarianceMatrix (*hullcloud, xyz_centroid, covariance_matrix);
-						cout << "Covariance Matrix: " << covariance_matrix << "\n";
-
-            //Point Feature Histogram
-						//Remove NAN
-						// std::vector<int> normalindices;
-						// cout << hullcloud->points.size() <<"\t";
-						// pcl::removeNaNFromPointCloud(*hullcloud, *hullcloud, hullindices);
-						// cout << hullcloud->points.size() <<"\n";
-
-						// Estimate the normals.
-						pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> normalEstimation;
-						normalEstimation.setInputCloud(hullcloud);
-						normalEstimation.setRadiusSearch(0.3);
-						pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree(new pcl::search::KdTree<pcl::PointXYZ>);
-						normalEstimation.setSearchMethod(kdtree);
-						normalEstimation.compute(*normals);
-
-						cout << "\nDONE NORMALS\n";
-
-            // Create the PFH estimation class, and pass the input dataset+normals to it
-            pcl::PFHEstimation<pcl::PointXYZ, pcl::Normal, pcl::PFHSignature125> pfh;
-            pfh.setInputCloud (hullcloud);
-            pfh.setInputNormals (normals);
-            pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
-            pfh.setSearchMethod (tree);
-            pcl::PointCloud<pcl::PFHSignature125>::Ptr pfhs (new pcl::PointCloud<pcl::PFHSignature125> ());
-            pfh.setRadiusSearch (0.5);
-            pfh.compute (*pfhs);
-            cout << pfhs->points[0] <<"\n";
-
-						viewer.showCloud (finalcloud);
-
-						cout <<"i="<<i<<"\n";
-
-						if(shouldSave){
-
-							std::ostringstream ostr1; //output string stream
-							ostr1 << foldername << ::folder_number << i << ".png";
-							string imgname = ostr1.str();
-
-							std::ostringstream ostr2; //output string stream
-							ostr2 << foldername << ::folder_number << i << ".json";
-							string filename = ostr2.str();
-
-							pcl::io::savePNGFile(imgname, *finalcloud, "rgb");
-							ofstream myfile;
-							myfile.open(filename.c_str());
-							myfile << "{";
-							//Normals
-							myfile << "\"normals\":{ \"x\":"<<coefficients->values[0] <<",\"y\":"<< coefficients->values[1] <<",\"z\":"<<coefficients->values[2]<<",\"d\":"<<coefficients->values[3] << "},";
-							//Surface Area
-							myfile << "\"area\":"<< cHull.getTotalArea() << ",";
-							//Volume
-							myfile << "\"volume\":"<< cHull.getTotalVolume() << ",";
-							//Covariance
-							myfile << "\"covariance\":"<< covariance_matrix << ",";
-
-							myfile << "}";
-							myfile.close();
-						}
-					}
-
-					i++;
-					if (cloud->points.size () < 0.3 * nr_points || inliers->indices.size () == 0){
-						cout << "-------------------------------------------------------------------------------------------------------------------------" <<"\n";
-						cout << "Cloud points: " << (cloud->points.size () > 0.3 * nr_points) <<"\n";
-						cout << "Inliers indices: " << (inliers->indices.size () == 0) <<"\n";
-						shouldSegmentMore = false;
-					}
-				}
-		}//end of if
-	}
-
-	void run (){
-		pcl::Grabber* interface = new pcl::OpenNIGrabber();
-		boost::function<void (const pcl::PointCloud<pcl::PointXYZRGBA>::ConstPtr&)> f = boost::bind (&SimpleOpenNIViewer::cloud_cb_, this, _1);
-
-		interface->registerCallback (f);
-		interface->start ();
-
-		while (!viewer.wasStopped()){
-			boost::this_thread::sleep (boost::posix_time::seconds (1));
-		}
-		interface->stop ();
+    while (!viewer.wasStopped()){
+      boost::this_thread::sleep (boost::posix_time::seconds (1));
+    }
+    interface->stop ();
 }
 
 pcl::visualization::CloudViewer viewer;
@@ -232,7 +95,7 @@ pcl::visualization::CloudViewer viewer;
 
 int main ()
 {
-	SimpleOpenNIViewer v;
-	v.run ();
-	return 0;
+  SimpleOpenNIViewer v;
+  v.run ();
+  return 0;
 }
