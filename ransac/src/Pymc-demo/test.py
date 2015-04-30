@@ -1,0 +1,132 @@
+import numpy as np
+import pymc
+from matplotlib import pyplot
+from matplotlib.mlab import normpdf
+
+from appearances import *
+
+
+'''
+Implements a prototype of the generative object model.
+In this version we only have two properties: mass and volume.
+
+The training data consist of a bunch of mass and volume
+observations, in principle gathered from a robot.
+In this demo we generate the data from a linear model with
+some output noise.
+
+This model posits a linear relationship between mass and volume:
+m = a * v + b + epsilon, epsilon ~ N(0, sigma^2)
+
+Thus our model parameters are a, b, and sigma.  We put gaussian
+priors on a and b, and a uniform prior on sigma (since it has
+to be positive.)
+
+------------------------------------------------------------------
+all visual features:
+v - bounding polygon volume
+a - bounding polygon area
+nu - normals for each detected plane
+kappa - 3x3 covariance matrix of point cloud (mass distribution, like inertia matrix)
+
+all physical feature:
+m - mass
+mu_x - friction in x direction
+mu_x - friction in y direction
+w_x - friction joint x
+w_y - friction joint y
+w_t - friction joint angle
+
+'''
+
+def linear_model(a, b, c, v, ar, sigma):
+    return np.random.normal(a*v + b*ar + c, sigma)
+
+def quadratic_model(a, b, c, x, sigma):
+    return np.random.normal(a*x**2 + b*x + c, sigma)
+
+def generate_data(a, b, v, sigma):
+    return linear_model(a, b, v, sigma)
+
+def build_model(volume_data, area_data, mass_data):
+    '''
+    :param v: volume (observed data)
+    :param m: mass (observed data)
+    '''
+
+    # weak gaussian prior on linear regression coefficient
+    a = pymc.Normal('a', mu=0, tau=0.1)
+    b = pymc.Normal('b', mu=0, tau=0.1)
+
+    # weak gaussian prior on linear regression intercept
+    c = pymc.Normal('c', mu=0, tau=0.1)
+
+    @pymc.deterministic
+    def muM(a=a, b=b, c=c, v=volume_data, ar=area_data):
+        '''
+        Implements a linear regression model for mass on volume.
+        '''
+        return a*v + b*ar + c
+        #return a*v + b
+
+    # weak uniform prior on output noise variance
+    sigma = pymc.Uniform('sigma', 0.0, 200.0, value=3.0) # value=10., observed=True
+
+    # overall model likelihood for m ~ a*v + b + noise, noise ~ Normal(0, sigma^2)
+    m = pymc.Normal('m', mu=muM, tau=1.0/sigma**2, value=mass_data, observed=True)
+
+    return pymc.Model(locals())
+
+if __name__ == '__main__':
+    # v = np.linspace(1, 3, num=20)
+    # m = generate_data(a=2.5, b=2, v=v, sigma=0.25)
+    # print "v = ", v
+    # print "m = ",m
+
+    # Printing appearance data
+    listOfObjects = getObjectAppearances('data.csv')
+    # print listOfObjects
+
+    v = np.array([x.volume for x in listOfObjects])
+    m = np.array([x.mass for x in listOfObjects])
+    ar = np.array([x.area for x in listOfObjects])
+    print "v1 = ", v
+    print "ar1 = ",ar
+    print "m1 = ",m
+
+    model = build_model(v, ar, m)   # make pymc model object
+    mcmc = pymc.MCMC(model)     # make an sampler for the model
+
+    # run the sampler
+    niter = 10000
+    burn  = 9000
+    thin  = 10
+    tune_interval = 1000
+    mcmc.sample(niter, burn, thin, tune_interval)
+
+    # extract the sampler statistics
+    fit = mcmc.stats()
+    a_post_mean = fit['a']['mean']          # posterior component means
+    b_post_mean = fit['b']['mean']          # posterior component precisions
+    c_post_mean = fit['c']['mean']          # posterior component precisions
+    sigma_post_mean = fit['sigma']['mean']  # posterior component mixing coefficients
+    print "\nPosterior linear coefficient:", a_post_mean
+    print "\nPosterior linear coefficient:", b_post_mean
+    print "Posterior intercept:", c_post_mean
+    print "Posterior variance:", sigma_post_mean
+
+    pyplot.interactive(True)
+    pymc.Matplot.plot(mcmc)
+    mcmc.summary()
+
+    ## Now lets do something with our estimated model!
+    # some volume data measured by our kinect:
+    observed_volume = np.array([2.1])
+    observed_area = np.array([10.34])
+
+    predicted_means = linear_model(
+        a=a_post_mean, b=b_post_mean,c=c_post_mean,
+        v=observed_volume, ar= observed_area, sigma=sigma_post_mean)
+
+    print "Given volume observations: ", observed_volume, " predicted: ", predicted_means
+    import ipdb; ipdb.set_trace()
