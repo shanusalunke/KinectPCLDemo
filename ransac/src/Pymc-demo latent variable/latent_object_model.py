@@ -1,10 +1,12 @@
 #import sys;
 #sys.path.insert(0, "/Users/jscholz/vc/pymc/build/lib.macosx-10.9-intel-2.7/")
 
+import scipy
 import numpy as np
 import pymc
 from matplotlib import pyplot
 from matplotlib.mlab import normpdf
+from data import get_data
 
 '''
 Implements an alternative object model in which we
@@ -58,7 +60,7 @@ def generate_data(mu_m, mu_v, sigma_m, sigma_v, pi, n):
     z = np.random.choice(k, n, p=pi)
     return np.random.normal(mu_m[z], sigma_m[z]), np.random.normal(mu_v[z], sigma_v[z])
 
-def build_model(m, v, k, tau=None):
+def build_model(m, Y, k):
     '''
     :param m: observed data (1-D np.array)
     :param k: number of latent components (int)
@@ -73,18 +75,21 @@ def build_model(m, v, k, tau=None):
 
     # legit version:
     mu_m = pymc.Uniform('mu_m', lower=lbc, upper=ubc)
+    # old version:
     mu_v = pymc.Uniform('mu_v', lower=lbc, upper=ubc)
+    # new version:
+    # [need something like this: test_mu = pymc.Normal('test_mu', 0, 1, size=2)]
 
-    # cheating version:
-    # mu_m = pymc.Lambda('mu_m', lambda X=0: np.array([3.0, 5.0, 7.0]))
-    # mu_v = pymc.Lambda('mu_v', lambda X=0: np.array([12.0, 16.0, 30.0]))
-
-    if tau == None:
-        tau_m = pymc.Gamma('tau_m', alpha=1, beta=0.001, size=k) # this should work but sampler has trouble
-        tau_v = pymc.Gamma('tau_v', alpha=1, beta=0.001, size=k) # this should work but sampler has trouble
-    else:
-        tau_m = pymc.Lambda('tau_m', lambda X=0: tau)
-        tau_v = pymc.Lambda('tau_v', lambda X=0: tau)
+    tau_m = pymc.Gamma('tau_m', alpha=1, beta=0.001, size=k) # this should work but sampler has trouble
+    # old version: 
+    tau_v = pymc.Gamma('tau_v', alpha=1, beta=0.001, size=k) # this should work but sampler has trouble
+    # new version:
+    # [ need something like this: test_cov = pymc.Wishart("test_cov_matrix_inv", 2, [[1, 0],[0, 1]]) #np.linalg.inv(cov_matrix))]
+    Mu_Y = np.empty(k, dtype=object)
+    W_Y = np.empty(k, dtype=object)
+    for i in range(k):
+        Mu_Y[i] = pymc.Normal("test_mu_vector_%s" % i, 0, 1e-4, size=33) 
+        W_Y[i] = pymc.Wishart("test_cov_matrix_%s" % i, 17, np.eye(33) * 1.0)
 
     ## categorical variable for mixture weights
     #pi = np.ones(k)/k   # uniform prior on component indicator
@@ -93,8 +98,24 @@ def build_model(m, v, k, tau=None):
     Z = pymc.Categorical('Z', size=n, p=pi) # latent component selector
 
     ## gaussian likelihood
+
     M = pymc.Normal('M', mu=mu_m[Z], tau=tau_m[Z], observed=True, value=m)
-    V = pymc.Normal('V', mu=mu_v[Z], tau=tau_m[Z], observed=True, value=v)
+
+    import ipdb;ipdb.set_trace()
+    mu_chair1 = np.mean(data['chair1'], axis=1)
+    cov_chair1 = np.cov(data['chair1'])
+
+    # old version:
+    # V = pymc.Normal('V', mu=mu_v[Z], tau=tau_m[Z], observed=True, value=v)
+    # new version:
+    c1 = pymc.MvNormal('chair1', mu_chair1, cov_chair1, observed=True, value=data['chair1'])
+    # example:
+    # test_mu = [0, 0]
+    test_mu = pymc.Normal('test_mu', 0, 1, size=2)
+    # test_cov = [[1, 0],[0, 1]]
+    test_cov = pymc.Wishart("test_cov_matrix_inv", 2, [[1, 0],[0, 1]]) #np.linalg.inv(cov_matrix))
+    pymc.MvNormal('test', Mu_Y[Z], W_Y[Z], observed=True, value=np.array([[0, 0], [1, 0], [3, 3]]))
+    
 
     return pymc.Model(locals())
 
@@ -123,10 +144,12 @@ if __name__ == '__main__':
 
     m,v_old = generate_data(mu_m, mu_v, sigma_m, sigma_v, pi, n)     # generated data
 
+    data = get_data()
 
     k = mu_m.shape[0] # number of components
     # model = build_model(m, v, k, tau=1./sigma_m**2) # make pymc model object
-    model = build_model(m, v, k) # make pymc model object
+    # model = build_model(m, v, k) # make pymc model object
+    model = build_model(m, data, k) # make pymc model object
     mcmc = pymc.MCMC(model) # make an sampler for the model
 
     # draw the graphical model
@@ -141,8 +164,8 @@ if __name__ == '__main__':
         import sys; sys.exit()
 
     # run the sampler
-    niter = 100000
-    burn  = 90000
+    niter = 10000
+    burn  = 9000
     thin  = 10
     tune_interval = 1000
     mcmc.sample(niter, burn, thin, tune_interval)
